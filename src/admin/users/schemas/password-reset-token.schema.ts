@@ -6,6 +6,9 @@ export class PasswordResetToken extends Document {
     @Prop({ required: true, unique: true })
     email: string;
 
+    @Prop({ default: true })
+    url_or_otp: boolean;
+
     @Prop({ required: true })
     token: string;
 

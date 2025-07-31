@@ -16,6 +16,12 @@ export class UsersService {
     return `This action returns a #${id} user`;
   }
 
+  findByEmail(email: string) {
+    // This method should interact with the database to find a user by email
+    // For now, we return a mock user object
+    return { id: 1, email: email, name: 'Test User' };
+  }
+
   update(id: number, updateUserDto: UpdateUserDto) {
     return `This action updates a #${id} user`;
   }

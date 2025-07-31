@@ -6,6 +6,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from './admin/users/users.module';
 import { AuthModule } from './admin/auth/auth.module';
 import { RoleModule } from './admin/role/role.module';
+import { ExistsConstraint } from './utilis/decorators/exists.decorator';
+import { UniqueConstraint } from './utilis/decorators/unique.decorator';
 
 @Module({
   imports: [
@@ -47,6 +49,13 @@ import { RoleModule } from './admin/role/role.module';
     RoleModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // global exists decorator
+    ExistsConstraint,
+    // global unique decorator
+    UniqueConstraint,
+
+  ],
 })
 export class AppModule { }
