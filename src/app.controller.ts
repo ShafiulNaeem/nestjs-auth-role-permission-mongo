@@ -1,8 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ApiSuccessResponse } from './utilis/interfaces/api-success-response.interface';
+import { version } from 'os';
 
-@Controller()
+@Controller({ version: '1' })
 export class AppController {
   constructor(private readonly appService: AppService) { }
 
