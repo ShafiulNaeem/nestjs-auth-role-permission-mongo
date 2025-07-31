@@ -1,11 +1,40 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { User, UserDocument } from './schemas/user.schema';
+import * as bcrypt from 'bcryptjs';
+
 
 @Injectable()
 export class UsersService {
+
+  constructor(
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
+  ) { }
+
   create(createUserDto: CreateUserDto) {
     return 'This action adds a new user';
+  }
+
+  async processData(data: any) {
+    const salt = await bcrypt.genSalt();
+    data.password = await bcrypt.hash(data.password, salt);
+    data.email_verified_at = new Date(); // Set email verification date to now
+    // unset confirmPassword if it exists
+    if (data.confirmPassword) {
+      delete data.confirmPassword;
+    }
+    // process image if it exists
+    if (data.image) {
+      data.image = data.image.path;  
+    }
+
+    // Create a new user instance
+    const createdUser = new this.userModel(data);
+    return createdUser.save();
   }
 
   findAll() {

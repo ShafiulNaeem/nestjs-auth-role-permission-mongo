@@ -1,6 +1,14 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
+export type UserDocument = User & Document;
+
+/**
+ * User Schema
+ * This schema defines the structure of the user document in the MongoDB database.
+ * It includes fields for user details such as name, email, password, status, and timestamps.
+ */
+
 @Schema({ timestamps: true })
 export class User extends Document {
     @Prop({ required: true, index: true })
