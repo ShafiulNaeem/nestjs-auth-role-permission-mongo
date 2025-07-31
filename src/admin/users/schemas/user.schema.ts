@@ -15,13 +15,13 @@ export class User extends Document {
     @Prop({ required: true })
     password: string;
 
+    @Prop({ default: true })
+    status: boolean;
+
     @Prop({ default: null })
     image: string;
 
-    @Prop({ default: 0 })
-    accuracy: number;
-
-    @Prop()
+    @Prop({ default: null })
     remember_token?: string;
 
     @Prop({ type: Types.ObjectId, ref: 'User', default: null })
@@ -30,7 +30,7 @@ export class User extends Document {
     @Prop({ type: Types.ObjectId, ref: 'User', default: null })
     updated_by?: Types.ObjectId;
 
-    @Prop()
+    @Prop({ default: null })
     last_login_at?: Date;
 
     @Prop({ default: null })
