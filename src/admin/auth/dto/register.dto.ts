@@ -1,5 +1,5 @@
 import { IsEmail, IsNotEmpty, MinLength, IsBoolean, IsOptional } from 'class-validator';
-import { Unique } from '../../../utilis/decorators/unique.decorator';
+import { Unique } from '../../../utilis/validation';
 import { Match } from '../../../utilis/decorators/match.decorator';
 
 /**
@@ -12,7 +12,7 @@ export class RegisterDto {
 
     @IsEmail()
     @IsNotEmpty()
-    @Unique('users', 'email')
+    @Unique('users') 
     email: string;
 
     @IsNotEmpty()

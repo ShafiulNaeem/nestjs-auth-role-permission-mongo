@@ -19,23 +19,23 @@ export class UsersService {
     return 'This action adds a new user';
   }
 
-  async processData(data: any) {
-    const salt = await bcrypt.genSalt();
-    data.password = await bcrypt.hash(data.password, salt);
-    data.email_verified_at = new Date(); // Set email verification date to now
-    // unset confirmPassword if it exists
-    if (data.confirmPassword) {
-      delete data.confirmPassword;
-    }
-    // process image if it exists
-    if (data.image) {
-      data.image = data.image.path;  
-    }
+  // async processData(data: any) {
+  //   const salt = await bcrypt.genSalt();
+  //   data.password = await bcrypt.hash(data.password, salt);
+  //   data.email_verified_at = new Date(); // Set email verification date to now
+  //   // unset confirmPassword if it exists
+  //   if (data.confirmPassword) {
+  //     delete data.confirmPassword;
+  //   }
+  //   // process image if it exists
+  //   if (data.image) {
+  //     data.image = data.image.path;  
+  //   }
 
-    // Create a new user instance
-    const createdUser = new this.userModel(data);
-    return createdUser.save();
-  }
+  //   // Create a new user instance
+  //   const createdUser = new this.userModel(data);
+  //   return createdUser.save();
+  // }
 
   findAll() {
     return `This action returns all users`;

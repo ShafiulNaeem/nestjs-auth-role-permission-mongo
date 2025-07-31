@@ -6,8 +6,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from './admin/users/users.module';
 import { AuthModule } from './admin/auth/auth.module';
 import { RoleModule } from './admin/role/role.module';
-import { ExistsConstraint } from './utilis/decorators/exists.decorator';
-import { UniqueConstraint } from './utilis/decorators/unique.decorator';
+import { ValidationModule } from './utilis/validation/validation.module';
 
 @Module({
   imports: [
@@ -47,15 +46,11 @@ import { UniqueConstraint } from './utilis/decorators/unique.decorator';
     UsersModule,
     AuthModule,
     RoleModule,
+    ValidationModule, // Add global validation module
   ],
   controllers: [AppController],
   providers: [
     AppService,
-    // global exists decorator
-    ExistsConstraint,
-    // global unique decorator
-    UniqueConstraint,
-
   ],
 })
 export class AppModule { }

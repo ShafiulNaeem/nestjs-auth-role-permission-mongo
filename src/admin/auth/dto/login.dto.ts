@@ -1,11 +1,11 @@
 import { IsEmail, IsNotEmpty } from 'class-validator';
-import { Exists } from '../../../utilis/decorators/exists.decorator';
+import { Exists } from '../../../utilis/validation';
 
 export class LoginDto {
 
     @IsEmail()
     @IsNotEmpty()
-    @Exists('users', 'email', { message: 'Email not found in users collection' })
+    @Exists('users','email')
     email: string;
 
     @IsNotEmpty()
