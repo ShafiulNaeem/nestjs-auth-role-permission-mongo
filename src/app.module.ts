@@ -7,6 +7,7 @@ import { UsersModule } from './admin/users/users.module';
 import { AuthModule } from './admin/auth/auth.module';
 import { RoleModule } from './admin/role/role.module';
 import { ValidationModule } from './utilis/validation/validation.module';
+import { MailModule } from './utilis/mail/mail.module';
 
 @Module({
   imports: [
@@ -15,7 +16,6 @@ import { ValidationModule } from './utilis/validation/validation.module';
       isGlobal: true,
     }),
     // connect mongo database
-    // Connect to MongoDB using Mongoose
     MongooseModule.forRootAsync({
       useFactory: async () => {
         try {
@@ -47,6 +47,11 @@ import { ValidationModule } from './utilis/validation/validation.module';
     AuthModule,
     RoleModule,
     ValidationModule, // Add global validation module
+
+
+    // import mail module
+    MailModule,
+
   ],
   controllers: [AppController],
   providers: [

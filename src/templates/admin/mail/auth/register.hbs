@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Email</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .content {
+            background-color: #f9f9f9;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .welcome-message {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .user-details {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>Welcome to {{appName}}!</h1>
+    </div>
+
+    <div class="content">
+        <div class="welcome-message">
+            <h2>Hello {{data.name}}!</h2>
+            <p>Congratulations! Your account has been successfully created. We're excited to have you join our
+                community.</p>
+        </div>
+
+        <div class="user-details">
+            <h3>Your Account Details:</h3>
+            <p><strong>Name:</strong> {{data.name}}</p>
+            <p><strong>Email:</strong> {{data.email}}</p>
+            <p><strong>Registration Date:</strong> {{data.email_verified_at}}</p>
+        </div>
+
+        <p>You can now log in to your account and start exploring all the features we have to offer.</p>
+
+        <a href="#" class="button">Change Password</a>
+
+        <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+    </div>
+
+    <div class="footer">
+        <p>Thank you for choosing {{appName}}!</p>
+        <p>&copy; {{currentYear}} {{appName}}. All rights reserved.</p>
+    </div>
+</body>
+
+</html>

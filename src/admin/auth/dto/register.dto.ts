@@ -1,4 +1,5 @@
 import { IsEmail, IsNotEmpty, MinLength, IsBoolean, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
 import { Unique } from '../../../utilis/validation';
 import { Match } from '../../../utilis/decorators/match.decorator';
 
@@ -26,6 +27,7 @@ export class RegisterDto {
 
     @IsBoolean()
     @IsNotEmpty()
+    @Type(() => Boolean)
     status: boolean;
 
     @IsOptional()
