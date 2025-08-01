@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { LoginDto } from './dto/login.dto';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { PasswordResetToken, PasswordResetTokenDocument } from '../users/schemas/password-reset-token.schema';
 import { Model } from 'mongoose';
 import { MailService } from '../../utilis/mail/mail.service';
 import { randomBytes } from 'crypto';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
@@ -15,11 +16,51 @@ export class AuthService {
     private passwordResetTokenModel: Model<PasswordResetTokenDocument>,
     private readonly mailService: MailService,
     private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
   ) { }
 
 
-  login(loginDto: LoginDto) {
-    return 'This action adds a new auth';
+  async validateUser(email: string, password: string): Promise<any> {
+    try {
+      const user = await this.usersService.findByEmail(email);
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      // Convert to plain object and remove password
+      const userObj = user.toObject();
+      const { password: userPassword, ...result } = userObj;
+      return result;
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Invalid credentials');
+    }
+  }
+
+  async login(user: any) {
+    const payload = {
+      email: user.email,
+      sub: user._id,
+      name: user.name
+    };
+    return {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        status: user.status,
+        email_verified_at: user.email_verified_at,
+        image: user.image,
+      },
+      access_token: this.jwtService.sign(payload),
+    };
   }
 
   async forgotPassword(data: any) {

@@ -1,6 +1,9 @@
 import {
   Controller,
   Post,
+  Get,
+  Request,
+  UseGuards,
   Body,
   UploadedFile,
   UseInterceptors,
@@ -18,6 +21,7 @@ import { VerifyOtpOrTokenDto } from './dto/verify-otp-or-token.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller({ version: '1' })
 export class AuthController {
@@ -26,6 +30,22 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
   ) { }
+
+  @Post('login')
+  async login(@Body() loginDto: LoginDto) {
+    try {
+      const user = await this.authService.validateUser(loginDto.email, loginDto.password);
+      const loginResult = await this.authService.login(user);
+
+      return {
+        statusCode: 200,
+        message: 'Login successful',
+        data: loginResult
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 
   @Post('register')
   @UseInterceptors(
@@ -70,11 +90,6 @@ export class AuthController {
     }
   }
 
-  @Post('login')
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
-  }
-
   @Post('password/forgot')
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     try {
@@ -110,13 +125,19 @@ export class AuthController {
     }
   }
 
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-  //   return this.authService.update(+id, updateAuthDto);
-  // }
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  profile(@Request() req) {
+    return req.user;
+  }
 
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.authService.remove(+id);
-  // }
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  logout(@Request() req: Express.Request) {
+    return {
+      statusCode: 200,
+      message: 'Logout successful',
+      data: null,
+    };
+  }
 }

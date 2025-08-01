@@ -56,15 +56,15 @@ export class UsersService {
     }
   }
 
-  findAll() {
+  async findAll() {
     return this.userModel.find().exec();
   }
 
-  findOne(id: number) {
+  async findOne(id: string) {
     return this.userModel.findById(id).exec();
   }
 
-  findByEmail(email: string) {
+  async findByEmail(email: string) {
     return this.userModel.findOne({ email }).exec();
   }
 
