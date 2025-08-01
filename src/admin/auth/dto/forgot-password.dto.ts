@@ -1,11 +1,11 @@
 import { IsEmail, IsNotEmpty, IsOptional } from 'class-validator';
-import { Exists } from '../../../utilis/decorators/exists.decorator';
+import { Exists } from '../../../utilis/validation';
 
 export class ForgotPasswordDto {
 
     @IsEmail()
     @IsNotEmpty()
-    @Exists('users', 'email', { message: 'Email not found in users collection' })
+    @Exists('users', 'email')
     email: string;
 
     @IsOptional()

@@ -6,6 +6,9 @@ export class ResetPasswordDto {
     @IsEmail()
     @IsNotEmpty()
     @Exists('users', 'email')
+    @Exists('passwordresettokens', 'email', {
+        message: 'Invalid email or token has expired',
+    })
     email: string;
 
     @IsNotEmpty()

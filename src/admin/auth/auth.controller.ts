@@ -14,6 +14,10 @@ import { extname } from 'path';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
+import { VerifyOtpOrTokenDto } from './dto/verify-otp-or-token.dto';
+import { LoginDto } from './dto/login.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 
 @Controller({ version: '1' })
 export class AuthController {
@@ -66,15 +70,45 @@ export class AuthController {
     }
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.authService.findAll();
-  // }
+  @Post('login')
+  login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
+  }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.authService.findOne(+id);
-  // }
+  @Post('password/forgot')
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    try {
+      return {
+        statusCode: 200,
+        message: 'Forgot password request processed successfully',
+        data: await this.authService.forgotPassword(forgotPasswordDto),
+      };
+    } catch (error) {
+      throw new BadRequestException('Error processing forgot password request');
+    }
+  }
+
+  @Post('password/verify')
+  async verifyToken(@Body() verifyOtpOrTokenDto: VerifyOtpOrTokenDto) {
+    return {
+      statusCode: 200,
+      message: 'Token verification successful',
+      data: await this.authService.verifyToken(verifyOtpOrTokenDto),
+    };
+  }
+
+  @Post('password/reset')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    try {
+      return {
+        statusCode: 200,
+        message: 'Password reset successful',
+        data: await this.authService.resetPassword(resetPasswordDto),
+      };
+    } catch (error) {
+      throw new BadRequestException('Error processing password reset');
+    }
+  }
 
   // @Patch(':id')
   // update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {

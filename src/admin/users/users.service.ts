@@ -57,24 +57,41 @@ export class UsersService {
   }
 
   findAll() {
-    return `This action returns all users`;
+    return this.userModel.find().exec();
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} user`;
+    return this.userModel.findById(id).exec();
   }
 
   findByEmail(email: string) {
-    // This method should interact with the database to find a user by email
-    // For now, we return a mock user object
-    return { id: 1, email: email, name: 'Test User' };
+    return this.userModel.findOne({ email }).exec();
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(id: number, user: any) {
+    const existingUser = await this.userModel.findById(id).exec();
+    if (!existingUser) {
+      throw new Error('User not found');
+    }
+    Object.assign(existingUser, user);
+    if (user.password) {
+      const salt = await bcrypt.genSalt();
+      existingUser.password = await bcrypt.hash(existingUser.password, salt);
+    }
+    return this.userModel.findByIdAndUpdate(id, existingUser, { new: true }).exec();
+  }
+
+  async updatePassword(email: string, password: string) {
+    const user = await this.findByEmail(email);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    const salt = await bcrypt.genSalt();
+    user.password = await bcrypt.hash(password, salt);
+    return this.userModel.findByIdAndUpdate(user._id, user, { new: true }).exec();
   }
 
   remove(id: number) {
-    return `This action removes a #${id} user`;
+    return this.userModel.findByIdAndDelete(id).exec();
   }
 }
