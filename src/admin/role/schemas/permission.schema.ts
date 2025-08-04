@@ -6,14 +6,18 @@ export type PermissionDocument = Permission & Document;
 
 @Schema({ timestamps: true })
 export class Permission extends Document {
-    @Prop({ type: Types.ObjectId, ref: 'Role', required: true })
-    roleId: Types.ObjectId;
-
     @Prop({ required: true })
     subject: string;
 
     @Prop({ required: true })
     action: string;
+
+    @Prop({ default: null })
+    description?: string;
+
+    // One-to-Many: Permission belongs to one role
+    @Prop({ type: Types.ObjectId, ref: 'Role', required: true })
+    roleId: Types.ObjectId;
 
 }
 

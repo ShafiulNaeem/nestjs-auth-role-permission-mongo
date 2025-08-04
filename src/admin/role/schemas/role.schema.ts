@@ -12,7 +12,6 @@ export class Role extends Document {
     @Prop({ default: false })
     is_manage_all: boolean;
 
-
     @Prop({ default: null })
     guard_name?: string;
 
