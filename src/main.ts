@@ -29,6 +29,13 @@ async function bootstrap() {
 
   // validation pipe
   app.useGlobalPipes(new ValidationPipe());
+  // app.useGlobalPipes(
+  //   new ValidationPipe({
+  //     whitelist: true,
+  //     transform: true,
+  //   }),
+  // );
+  
   // Apply global interceptors
   app.useGlobalInterceptors({
     intercept(context, next) {

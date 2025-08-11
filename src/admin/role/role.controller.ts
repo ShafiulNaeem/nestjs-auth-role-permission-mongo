@@ -15,19 +15,21 @@ import { RoleService } from './role.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AssignRoleDto } from './dto/assign-role.dto';
 
-@Controller('role')
+@Controller({ version: '1' ,path: 'role'})
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Post('create')
+  @Post()
   async create(@Body() createRoleDto: CreateRoleDto) {
     try {
+      const createdRole = await this.roleService.create(createRoleDto);
       return {
         statusCode: 201,
         message: 'Role created successfully',
-        data: await this.roleService.create(createRoleDto),
+        data: createdRole,
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -35,13 +37,14 @@ export class RoleController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('list')
+  @Get()
   async findAll(@Query() query: any) {
     try {
+      const roles = await this.roleService.findAll(query);
       return {
         statusCode: 200,
         message: 'Roles retrieved successfully',
-        data: await this.roleService.findAll(query),
+        data: roles,
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -89,4 +92,34 @@ export class RoleController {
       throw new BadRequestException(error.message);
     }
   }
+
+  // @UseGuards(JwtAuthGuard)
+  // @Post('assign')
+  // async assignRole(@Body() assignRoleDto: AssignRoleDto) {
+  //   try {
+  //     const assignedRole = await this.roleService.assignRole(assignRoleDto);
+  //     return {
+  //       statusCode: 201,
+  //       message: 'Role assigned successfully',
+  //       data: assignedRole,
+  //     };
+  //   } catch (error) {
+  //     throw new BadRequestException(error.message);
+  //   }
+  // }
+
+  // @UseGuards(JwtAuthGuard)
+  // @Get('assign')
+  // async getAssignedRoles(@Query() query: any) {
+  //   try {
+  //     const assignedRoles = await this.roleService.assignRoleList(query);
+  //     return {
+  //       statusCode: 200,
+  //       message: 'Assigned roles retrieved successfully',
+  //       data: assignedRoles,
+  //     };
+  //   } catch (error) {
+  //     throw new BadRequestException(error.message);
+  //   }
+  // }
 }

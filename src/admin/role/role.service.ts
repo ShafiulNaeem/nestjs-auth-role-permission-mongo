@@ -1,12 +1,20 @@
-
-
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types, ClientSession, PaginateModel, PaginateResult, FilterQuery} from 'mongoose';
+import {
+  Model,
+  Types,
+  ClientSession,
+  PaginateModel,
+  PaginateResult,
+  FilterQuery,
+} from 'mongoose';
 import { Role, RoleDocument } from './schemas/role.schema';
 import { Permission, PermissionDocument } from './schemas/permission.schema';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { AssignRoleDto } from './dto/assign-role.dto';
+// import { AssignRole, AssignRoleModel, AssignRoleDocument} from './schemas/assign-role.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 
 @Injectable()
 export class RoleService {
@@ -14,10 +22,16 @@ export class RoleService {
     @InjectModel(Role.name)
     // private roleModel: Model<RoleDocument>,
     private readonly roleModel: PaginateModel<RoleDocument>,
-    @InjectModel(Permission.name) 
-    private permissionModel: Model<PermissionDocument>
-  ) {}
 
+    @InjectModel(Permission.name)
+    private permissionModel: Model<PermissionDocument>,
+
+    // @InjectModel(AssignRole.name)
+    // private assignRoleModel: AssignRoleModel,
+
+    // @InjectModel(User.name)
+    // private userModel: Model<UserDocument>,
+  ) {}
 
   async create(createRoleDto: CreateRoleDto) {
     const session = await this.roleModel.db.startSession();
@@ -33,7 +47,7 @@ export class RoleService {
           guard_name: createRoleDto.guard_name ?? null,
         });
 
-        const createdRole = await role.save({ session }) as RoleDocument;
+        const createdRole = (await role.save({ session })) as RoleDocument;
         createdRoleId = createdRole._id as Types.ObjectId;
 
         // 2) Set permissions (if any)
@@ -84,11 +98,12 @@ export class RoleService {
   // Get all roles with their permissions populated
   async findAll(params: any) {
     const collation = { locale: 'en', strength: 1 };
-    const { filter } = this.buildRoleFilters(params);
-    const sort = '-createdAt';
-    const populate = { path: 'permissions', select: 'subject action description' };
-
-
+    const { filter } = await this.buildRoleFilters(params);
+    const sort = 'name';
+    const populate = {
+      path: 'permissions',
+      select: 'subject action description',
+    };
     // if params has not limit or limit < 1 -> no pagination
     const limit = Number(params?.limit ?? 0);
     if (!limit || limit < 1) {
@@ -111,32 +126,26 @@ export class RoleService {
     return await this.roleModel.paginate(filter, options);
   }
 
- 
   async findOne(id: string) {
-    return await this.roleModel
-      .findById(id)
-      .populate('permissions')
-      .exec();
+    return await this.roleModel.findById(id).populate('permissions').exec();
   }
 
-  private buildRoleFilters(params: any) {
+  private async buildRoleFilters(params: any) {
     const filter: FilterQuery<RoleDocument> = {};
 
-    // search by name , permissions, subject, action
+    // search by name, permissions, subject, action
     if (params?.search) {
       const searchRegex = { $regex: String(params.search), $options: 'i' };
-      filter.name = { $regex: String(params.search), $options: 'i' };
-      const matchedRoleIds = this.permissionModel.distinct('roleId', {
-        $or: [
-          { subject: searchRegex },
-          { action: searchRegex }
-        ]
+
+      // Get role IDs that have permissions matching the search
+      const matchedRoleIds = await this.permissionModel.distinct('roleId', {
+        $or: [{ subject: searchRegex }, { action: searchRegex }],
       });
 
       filter.$or = [
         { name: searchRegex },
-        { description: searchRegex },
-        { _id: { $in: matchedRoleIds } } 
+        { guard_name: searchRegex },
+        { _id: { $in: matchedRoleIds } },
       ];
     }
 
@@ -144,38 +153,47 @@ export class RoleService {
     if (params?.guard_name) {
       filter.guard_name = params.guard_name;
     }
-    return filter;
+
+    return { filter };
   }
 
-
-
   async update(id: string, updateRoleDto: UpdateRoleDto) {
-     const session = await this.roleModel.db.startSession();
-     const existingRole = await this.roleModel.findById(id).exec();
-     const updatedRole = { ...existingRole, ...updateRoleDto };
-     // Remove permissions property
-     delete (updatedRole as any).permissions;
+    const session = await this.roleModel.db.startSession();
+    try {
+      await session.withTransaction(async () => {
+        // Update role
+        await this.roleModel.findByIdAndUpdate(
+          id,
+          {
+            name: updateRoleDto.name,
+            is_manage_all: updateRoleDto.is_manage_all,
+            guard_name: updateRoleDto.guard_name,
+          },
+          { new: true, session },
+        );
+        // Update permissions
+        await this.addPermissionToRole(
+          id,
+          updateRoleDto.permissions ?? [],
+          session,
+        );
+      });
 
-     try {
-       await session.withTransaction(async () => {
-         // Update role
-         await this.roleModel.findByIdAndUpdate(id, updatedRole, { new: true, session });
-         // Update permissions
-         await this.addPermissionToRole(id, updateRoleDto.permissions ?? [], session);
-       });
-
-       return this.roleModel
-          .findById(id)
-          .populate('permissions', 'subject action description')
-          .lean();
-     } finally {
-       await session.endSession();
-     }
+      return this.roleModel
+        .findById(id)
+        .populate('permissions', 'subject action description')
+        .lean();
+    } finally {
+      await session.endSession();
+    }
   }
 
   async remove(id: string) {
     const session = await this.roleModel.db.startSession();
-    
+    const existingRole = await this.roleModel.findById(id).exec();
+    if (!existingRole) {
+      throw new NotFoundException(`Role with ID ${id} not found`);
+    }
     try {
       await session.withTransaction(async () => {
         // Remove role from all permissions
@@ -188,4 +206,124 @@ export class RoleService {
       await session.endSession();
     }
   }
+
+//   async assignRole(assignRoleDto: AssignRoleDto) {
+//     const session = await this.assignRoleModel.db.startSession();
+//     let assignId: Types.ObjectId | null = null;
+
+//     try {
+//       await session.withTransaction(async () => {
+//         // ensure unique role per user: remove older rows
+//         await this.assignRoleModel.deleteMany(
+//           { userId: assignRoleDto.userId },
+//           { session },
+//         );
+
+//         const created = await new this.assignRoleModel({
+//           userId: new Types.ObjectId(assignRoleDto.userId),
+//           roleId: new Types.ObjectId(assignRoleDto.roleId),
+//         }).save({ session });
+
+//         assignId = created._id;
+//       });
+
+//       // return the created assignment populated (note: fields are userId/roleId)
+//       return this.assignRoleModel
+//         .findById(assignId)
+//         .populate({ path: 'userId', select: 'name email' })
+//         .populate({ path: 'roleId', select: 'name is_manage_all' })
+//         .lean()
+//         .exec();
+//     } finally {
+//       await session.endSession();
+//     }
+//   }
+
+//   private async assignRoleFilter(params: any) {
+//     const filter: FilterQuery<AssignRoleDocument> = {};
+
+//     // search by user , role
+//     if (params?.search) {
+//       const searchRegex = { $regex: String(params.search), $options: 'i' };
+
+//       // Get role IDs that have permissions matching the search
+//       const matchedRoleIds = await this.roleModel.distinct('_id', {
+//         name: searchRegex,
+//       });
+
+//       const matchedUserIds = await this.userModel.distinct('_id', {
+//         name: searchRegex,
+//       });
+
+//       filter.$or = [
+//         { roleId: { $in: matchedRoleIds } },
+//         { userId: { $in: matchedUserIds } },
+//       ];
+//     }
+
+//     if (params?.roleId) {
+//       filter.roleId = params.roleId;
+//     }
+
+//     if (params?.userId) {
+//       filter.userId = params.userId;
+//     }
+
+//     return { filter };
+//   }
+
+//   async assignRoleList(params: any) {
+//   const { filter } = await this.assignRoleFilter(params);
+//   const collation = { locale: 'en', strength: 1 };
+//   const page  = Number(params?.page)  || 1;
+//   const limit = Number(params?.limit) || 0;
+
+//   const pipeline: any[] = [
+//     { $match: filter },
+//     {
+//       $lookup: {
+//         from: 'users',                // collection name
+//         localField: 'userId',
+//         foreignField: '_id',
+//         as: 'user',
+//         pipeline: [{ $project: { name: 1, email: 1 } }],
+//       },
+//     },
+//     { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+//     {
+//       $lookup: {
+//         from: 'roles',
+//         localField: 'roleId',
+//         foreignField: '_id',
+//         as: 'role',
+//         pipeline: [{ $project: { name: 1, is_manage_all: 1 } }],
+//       },
+//     },
+//     { $unwind: { path: '$role', preserveNullAndEmptyArrays: true } },
+//     { $sort: { 'user.name': 1 } },
+//   ];
+
+//   if (!limit || limit < 1) {
+//     return this.assignRoleModel.aggregate(pipeline)
+//       .collation(collation)
+//       .option({ allowDiskUse: true })
+//       .exec();
+//   }
+
+//   const agg = this.assignRoleModel.aggregate(pipeline).option({ allowDiskUse: true });
+//   const res = await this.assignRoleModel.aggregatePaginate(agg, { page, limit, collation });
+
+//   return {
+//     docs: res.docs,
+//     totalDocs: res.totalDocs,
+//     page: res.page,
+//     limit: res.limit,
+//     totalPages: res.totalPages,
+//     hasNextPage: res.hasNextPage,
+//     hasPrevPage: res.hasPrevPage,
+//     nextPage: res.nextPage,
+//     prevPage: res.prevPage,
+//   };
+// }
+
 }

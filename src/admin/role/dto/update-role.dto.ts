@@ -1,9 +1,14 @@
 import { IsNotEmpty, IsBoolean, IsOptional, ValidateNested} from 'class-validator';
 import { Type } from 'class-transformer';
 import { PermissionDto } from './permission.dto';
+import { Unique } from '../../../utilis/validation';
 
 export class UpdateRoleDto  {
     @IsNotEmpty()
+    id: string;
+
+    @IsNotEmpty()
+    @Unique('roles', 'name', { ignoreField: 'id' })
     name: string;
 
     @IsBoolean()
