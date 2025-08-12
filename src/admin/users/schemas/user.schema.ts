@@ -1,5 +1,6 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import * as mongoosePaginate from 'mongoose-paginate-v2';
 
 export type UserDocument = User & Document;
 
@@ -9,7 +10,11 @@ export type UserDocument = User & Document;
  * It includes fields for user details such as name, email, password, status, and timestamps.
  */
 
-@Schema({ timestamps: true })
+@Schema({
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+})
 export class User extends Document {
     @Prop({ required: true, index: true })
     name: string;
@@ -46,3 +51,12 @@ export class User extends Document {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+// define relationships
+UserSchema.virtual('assignRole', {
+    ref: 'AssignRole',
+    localField: '_id',
+    foreignField: 'userId',
+    justOne: true,
+});
+
+UserSchema.plugin(mongoosePaginate);

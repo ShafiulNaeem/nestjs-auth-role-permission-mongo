@@ -1,18 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types, Model } from 'mongoose';
-// import aggregatePaginate from 'mongoose-aggregate-paginate-v2';
 import aggregatePaginate = require('mongoose-aggregate-paginate-v2');
 import { AggregatePaginateModel, AggregatePaginateResult } from '../../../utilis/interfaces/aggregate-paginate.interfaces';
-// If you don't have a shared type, you can keep this local:
-// export interface AggregatePaginateResult<T> {
-//   docs: T[]; totalDocs: number; limit: number; page?: number; totalPages: number;
-//   hasNextPage: boolean; hasPrevPage: boolean; nextPage?: number; prevPage?: number;
-// }
-// export interface AggregatePaginateModel<T> extends Model<T> {
-//   aggregatePaginate(agg: any, options: any): Promise<AggregatePaginateResult<T>>;
-// }
 
-@Schema({ timestamps: true })
+@Schema({
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+})
 export class AssignRole {
   @Prop({ type: Types.ObjectId, ref: 'Role', required: true })
   roleId: Types.ObjectId;
