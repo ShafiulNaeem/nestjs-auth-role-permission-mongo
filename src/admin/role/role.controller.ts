@@ -16,6 +16,7 @@ import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AssignRoleDto } from './dto/assign-role.dto';
+import { RolePermission } from '../../utilis/decorators/role-permission.decorator';
 
 @Controller({ version: '1' ,path: 'role'})
 export class RoleController {
@@ -23,6 +24,7 @@ export class RoleController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
+  @RolePermission('Role','create')
   async create(@Body() createRoleDto: CreateRoleDto) {
     try {
       const createdRole = await this.roleService.create(createRoleDto);
@@ -38,6 +40,7 @@ export class RoleController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
+  @RolePermission('Role','list')
   async findAll(@Query() query: any) {
     try {
       const roles = await this.roleService.findAll(query);
@@ -68,6 +71,7 @@ export class RoleController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
+  @RolePermission('Role','show')
   async findOne(@Param('id') id: string) {
     try {
       return {
@@ -82,6 +86,7 @@ export class RoleController {
 
   @UseGuards(JwtAuthGuard)
   @Put(':id')
+  @RolePermission('Role','update')
   async update(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
     try {
       return {
@@ -96,6 +101,7 @@ export class RoleController {
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
+  @RolePermission('Role','delete')
   async remove(@Param('id') id: string) {
     try {
       return {
@@ -110,6 +116,7 @@ export class RoleController {
 
   @UseGuards(JwtAuthGuard)
   @Post('assign')
+  @RolePermission('Role','assign')
   async assignRole(@Body() assignRoleDto: AssignRoleDto) {
     try {
       const assignedRole = await this.roleService.assignRole(assignRoleDto);
@@ -125,6 +132,7 @@ export class RoleController {
 
   @UseGuards(JwtAuthGuard)
   @Get('assign/list')
+  @RolePermission('Role','assign-list')
   async getAssignedRoles(@Query() query: any) {
     try {
       const assignedRoles = await this.roleService.assignRoleList(query);

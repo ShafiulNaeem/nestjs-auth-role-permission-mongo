@@ -138,9 +138,9 @@ export class UsersService {
         updatedAt: userWithRole.updatedAt,
       },
       role: {
-        id: userWithRole.assignRole?.roleId,
-        name: userWithRole.assignRole?.role?.name,
-        is_manage_all: userWithRole.assignRole?.role?.is_manage_all,
+        roleId: userWithRole.assignRole?.roleId ?? null,
+        name: userWithRole.assignRole?.role?.name ?? null,
+        is_manage_all: userWithRole.assignRole?.role?.is_manage_all ?? null,
       },
       permissions: userWithRole.assignRole?.role?.permissions ?? [],
     };

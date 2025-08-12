@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
@@ -8,6 +9,8 @@ import { AuthModule } from './admin/auth/auth.module';
 import { RoleModule } from './admin/role/role.module';
 import { ValidationModule } from './utilis/validation/validation.module';
 import { MailModule } from './utilis/mail/mail.module';
+import { RolePermissionGuard } from './utilis/guards/role-permission.guard';
+import { JwtAuthGuard } from './admin/auth/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -56,6 +59,14 @@ import { MailModule } from './utilis/mail/mail.module';
   controllers: [AppController],
   providers: [
     AppService,
+     {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard, // global AuthGuard
+    },
+     {
+      provide: APP_GUARD,
+      useClass: RolePermissionGuard,
+    },
   ],
 })
 export class AppModule { }

@@ -22,6 +22,7 @@ import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { Public } from 'src/utilis/decorators/public.decorator';
 
 @Controller({ version: '1' })
 export class AuthController {
@@ -31,6 +32,7 @@ export class AuthController {
     private readonly usersService: UsersService,
   ) { }
 
+  @Public()
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     try {
@@ -47,6 +49,7 @@ export class AuthController {
     }
   }
 
+  @Public()
   @Post('register')
   @UseInterceptors(
     FileInterceptor('image', {
@@ -90,6 +93,7 @@ export class AuthController {
     }
   }
 
+  @Public()
   @Post('password/forgot')
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     try {
@@ -103,6 +107,7 @@ export class AuthController {
     }
   }
 
+  @Public()
   @Post('password/verify')
   async verifyToken(@Body() verifyOtpOrTokenDto: VerifyOtpOrTokenDto) {
     return {
@@ -112,6 +117,7 @@ export class AuthController {
     };
   }
 
+  @Public()
   @Post('password/reset')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     try {
