@@ -127,8 +127,12 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  profile(@Request() req) {
-    return req.user;
+  async profile(@Request() req) {
+    return {
+      statusCode: 200,
+      message: 'Profile retrieved successfully',
+      data: await this.usersService.userDetails(req.user.userId),
+    };
   }
 
   @UseGuards(JwtAuthGuard)

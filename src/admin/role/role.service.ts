@@ -250,7 +250,7 @@ export class RoleService {
         .populate('user','name email')
         .populate({
           path: 'role', // first populate the role
-          select: 'name is_manage_all permissions', // optional: choose fields
+          select: 'name is_manage_all', // optional: choose fields
           // populate: {
           //   path: 'permissions', // now populate the permissions inside role
           //   select: 'subject action', // choose fields from Permission schema
