@@ -10,6 +10,9 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // enable cors
+  app.enableCors();
+
   // Configure class-validator to use NestJS's dependency injection container
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
