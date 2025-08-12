@@ -3,10 +3,10 @@ import { Exists } from '../../../utilis/validation';
 
 export class AssignRoleDto {
     @IsNotEmpty()
-    @Exists('User','_id')
+    @Exists('users','_id')
     userId: string;
 
     @IsNotEmpty()
-    @Exists('Role','_id')
+    @Exists('roles','_id')
     roleId: string;
 }

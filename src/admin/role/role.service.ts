@@ -13,7 +13,11 @@ import { Permission, PermissionDocument } from './schemas/permission.schema';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
-// import { AssignRole, AssignRoleModel, AssignRoleDocument} from './schemas/assign-role.schema';
+import {
+  AssignRole,
+  AssignRoleModel,
+  AssignRoleDocument,
+} from './schemas/assign-role.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 
 @Injectable()
@@ -26,11 +30,11 @@ export class RoleService {
     @InjectModel(Permission.name)
     private permissionModel: Model<PermissionDocument>,
 
-    // @InjectModel(AssignRole.name)
-    // private assignRoleModel: AssignRoleModel,
+    @InjectModel(AssignRole.name)
+    private assignRoleModel: AssignRoleModel,
 
-    // @InjectModel(User.name)
-    // private userModel: Model<UserDocument>,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
   ) {}
 
   async create(createRoleDto: CreateRoleDto) {
@@ -126,6 +130,19 @@ export class RoleService {
     return await this.roleModel.paginate(filter, options);
   }
 
+  async dropdown(params: any) {
+    const collation = { locale: 'en', strength: 1 };
+    const { filter } = await this.buildRoleFilters(params);
+    const sort = 'name';
+    return await this.roleModel
+      .find(filter)
+      .collation(collation)
+      .sort(sort)
+      .select('_id name guard_name is_manage_all')
+      .lean()
+      .exec();
+  }
+
   async findOne(id: string) {
     return await this.roleModel.findById(id).populate('permissions').exec();
   }
@@ -207,123 +224,205 @@ export class RoleService {
     }
   }
 
-//   async assignRole(assignRoleDto: AssignRoleDto) {
-//     const session = await this.assignRoleModel.db.startSession();
-//     let assignId: Types.ObjectId | null = null;
+  async assignRole(assignRoleDto: AssignRoleDto) {
+    const session = await this.assignRoleModel.db.startSession();
+    let assignId: Types.ObjectId | null = null;
 
-//     try {
-//       await session.withTransaction(async () => {
-//         // ensure unique role per user: remove older rows
-//         await this.assignRoleModel.deleteMany(
-//           { userId: assignRoleDto.userId },
-//           { session },
-//         );
+    try {
+      await session.withTransaction(async () => {
+        // ensure unique role per user: remove older rows
+        await this.assignRoleModel.deleteMany(
+          { userId: new Types.ObjectId(assignRoleDto.userId) },
+          { session },
+        );
 
-//         const created = await new this.assignRoleModel({
-//           userId: new Types.ObjectId(assignRoleDto.userId),
-//           roleId: new Types.ObjectId(assignRoleDto.roleId),
-//         }).save({ session });
+        const created = await new this.assignRoleModel({
+          userId: new Types.ObjectId(assignRoleDto.userId),
+          roleId: new Types.ObjectId(assignRoleDto.roleId),
+        }).save({ session });
 
-//         assignId = created._id;
-//       });
+        assignId = created._id;
+      });
 
-//       // return the created assignment populated (note: fields are userId/roleId)
-//       return this.assignRoleModel
-//         .findById(assignId)
-//         .populate({ path: 'userId', select: 'name email' })
-//         .populate({ path: 'roleId', select: 'name is_manage_all' })
-//         .lean()
-//         .exec();
-//     } finally {
-//       await session.endSession();
-//     }
-//   }
+      // return the created assignment populated (note: fields are userId/roleId)
+      return this.assignRoleModel
+        .findById(assignId)
+        .populate('user','name email')
+        .populate({
+          path: 'role', // first populate the role
+          select: 'name is_manage_all permissions', // optional: choose fields
+          // populate: {
+          //   path: 'permissions', // now populate the permissions inside role
+          //   select: 'subject action', // choose fields from Permission schema
+          // },
+        })
+        // .populate({ path: 'userId', select: 'name email' })
+        // .populate({ path: 'roleId', select: 'name is_manage_all' })
+        .lean()
+        .exec();
+    } finally {
+      await session.endSession();
+    }
+  }
 
-//   private async assignRoleFilter(params: any) {
-//     const filter: FilterQuery<AssignRoleDocument> = {};
+  private async assignRoleFilter(params: any) {
+    const filter: FilterQuery<AssignRoleDocument> = {};
 
-//     // search by user , role
-//     if (params?.search) {
-//       const searchRegex = { $regex: String(params.search), $options: 'i' };
+    // search by user , role
+    if (params?.search) {
+      const searchRegex = { $regex: String(params.search), $options: 'i' };
 
-//       // Get role IDs that have permissions matching the search
-//       const matchedRoleIds = await this.roleModel.distinct('_id', {
-//         name: searchRegex,
-//       });
+      // Get role IDs that have permissions matching the search
+      const matchedRoleIds = await this.roleModel.distinct('_id', {
+        name: searchRegex,
+      });
 
-//       const matchedUserIds = await this.userModel.distinct('_id', {
-//         name: searchRegex,
-//       });
+      const matchedUserIds = await this.userModel.distinct('_id', {
+        name: searchRegex,
+      });
 
-//       filter.$or = [
-//         { roleId: { $in: matchedRoleIds } },
-//         { userId: { $in: matchedUserIds } },
-//       ];
-//     }
+      filter.$or = [
+        { roleId: { $in: matchedRoleIds } },
+        { userId: { $in: matchedUserIds } },
+      ];
+    }
 
-//     if (params?.roleId) {
-//       filter.roleId = params.roleId;
-//     }
+    if (params?.roleId) {
+      filter.roleId = new Types.ObjectId(params.roleId);
+    }
 
-//     if (params?.userId) {
-//       filter.userId = params.userId;
-//     }
+    if (params?.userId) {
+      filter.userId = new Types.ObjectId(params.userId);
+    }
 
-//     return { filter };
-//   }
+    return { filter };
+  }
 
-//   async assignRoleList(params: any) {
-//   const { filter } = await this.assignRoleFilter(params);
-//   const collation = { locale: 'en', strength: 1 };
-//   const page  = Number(params?.page)  || 1;
-//   const limit = Number(params?.limit) || 0;
+  async assignRoleList(params: any) {
+    const { filter } = await this.assignRoleFilter(params);
+    const collation = { locale: 'en', strength: 1 };
+    const page = Number(params?.page) || 1;
+    const limit = Number(params?.limit) || 0;
 
-//   const pipeline: any[] = [
-//     { $match: filter },
-//     {
-//       $lookup: {
-//         from: 'users',                // collection name
-//         localField: 'userId',
-//         foreignField: '_id',
-//         as: 'user',
-//         pipeline: [{ $project: { name: 1, email: 1 } }],
-//       },
-//     },
-//     { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
-//     {
-//       $lookup: {
-//         from: 'roles',
-//         localField: 'roleId',
-//         foreignField: '_id',
-//         as: 'role',
-//         pipeline: [{ $project: { name: 1, is_manage_all: 1 } }],
-//       },
-//     },
-//     { $unwind: { path: '$role', preserveNullAndEmptyArrays: true } },
-//     { $sort: { 'user.name': 1 } },
-//   ];
+    const pipeline: any[] = [
+      { $match: filter },
+      
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user',
+          pipeline: [{ $project: { name: 1, email: 1 } }],
+        },
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'roles',
+          localField: 'roleId',
+          foreignField: '_id',
+          as: 'role',
+          pipeline: [{ $project: { name: 1, is_manage_all: 1 } }],
+        },
+      },
+      { $unwind: { path: '$role', preserveNullAndEmptyArrays: true } },
 
-//   if (!limit || limit < 1) {
-//     return this.assignRoleModel.aggregate(pipeline)
-//       .collation(collation)
-//       .option({ allowDiskUse: true })
-//       .exec();
-//   }
+      { $sort: { 'user.name': 1 } },
 
-//   const agg = this.assignRoleModel.aggregate(pipeline).option({ allowDiskUse: true });
-//   const res = await this.assignRoleModel.aggregatePaginate(agg, { page, limit, collation });
+      // select fields to return
+      {
+        $project: {
+          _id: 1,
+          roleId: 1,
+          userId: 1,
+          user: 1,
+          role: 1,
+        },
+      },
+      
+    ];
 
-//   return {
-//     docs: res.docs,
-//     totalDocs: res.totalDocs,
-//     page: res.page,
-//     limit: res.limit,
-//     totalPages: res.totalPages,
-//     hasNextPage: res.hasNextPage,
-//     hasPrevPage: res.hasPrevPage,
-//     nextPage: res.nextPage,
-//     prevPage: res.prevPage,
-//   };
-// }
+    //   const pipeline: any[] = [
+    //   { $match: filter },
+      
+    //   {
+    //     $lookup: {
+    //       from: 'users',
+    //       localField: 'userId',
+    //       foreignField: '_id',
+    //       as: 'user',
+    //       pipeline: [{ $project: { name: 1, email: 1 } }],
+    //     },
+    //   },
+    //   { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+    //   {
+    //     $lookup: {
+    //       from: 'roles',
+    //       localField: 'roleId',
+    //       foreignField: '_id',
+    //       as: 'role',
+    //       // pipeline: [{ $project: { name: 1, is_manage_all: 1 } }],
+    //       pipeline: [
+    //       { $project: { name: 1, is_manage_all: 1 } },
+    //       {
+    //         $lookup: {
+    //           from: 'permissions',
+    //           localField: '_id',    
+    //           foreignField: 'roleId',
+    //           as: 'permissions',
+    //           pipeline: [
+    //             { $project: { subject: 1, action: 1 } }, // trim fields
+    //           ],
+    //         },
+    //       },
+    //     ],
+    //     },
+    //   },
+    //   { $unwind: { path: '$role', preserveNullAndEmptyArrays: true } },
 
+    //   { $sort: { 'user.name': 1 } },
+
+    //   // select fields to return
+    //   {
+    //     $project: {
+    //       _id: 1,
+    //       roleId: 1,
+    //       userId: 1,
+    //       user: 1,
+    //       role: 1,
+    //     },
+    //   },
+      
+    // ];
+
+    if (!limit || limit < 1) {
+      return this.assignRoleModel
+        .aggregate(pipeline)
+        .collation(collation)
+        .option({ allowDiskUse: true })
+        .exec();
+    }
+
+    const agg = this.assignRoleModel
+      .aggregate(pipeline)
+      .option({ allowDiskUse: true });
+    const res = await this.assignRoleModel.aggregatePaginate(agg, {
+      page,
+      limit,
+      collation,
+    });
+
+    return {
+      docs: res.docs,
+      totalDocs: res.totalDocs,
+      page: res.page,
+      limit: res.limit,
+      totalPages: res.totalPages,
+      hasNextPage: res.hasNextPage,
+      hasPrevPage: res.hasPrevPage,
+      nextPage: res.nextPage,
+      prevPage: res.prevPage,
+    };
+  }
 }

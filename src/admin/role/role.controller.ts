@@ -52,6 +52,21 @@ export class RoleController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('dropdown')
+  async dropdown(@Query() query: any) {
+    try {
+      const roles = await this.roleService.dropdown(query);
+      return {
+        statusCode: 200,
+        message: 'Roles retrieved successfully',
+        data: roles,
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     try {
@@ -93,33 +108,33 @@ export class RoleController {
     }
   }
 
-  // @UseGuards(JwtAuthGuard)
-  // @Post('assign')
-  // async assignRole(@Body() assignRoleDto: AssignRoleDto) {
-  //   try {
-  //     const assignedRole = await this.roleService.assignRole(assignRoleDto);
-  //     return {
-  //       statusCode: 201,
-  //       message: 'Role assigned successfully',
-  //       data: assignedRole,
-  //     };
-  //   } catch (error) {
-  //     throw new BadRequestException(error.message);
-  //   }
-  // }
+  @UseGuards(JwtAuthGuard)
+  @Post('assign')
+  async assignRole(@Body() assignRoleDto: AssignRoleDto) {
+    try {
+      const assignedRole = await this.roleService.assignRole(assignRoleDto);
+      return {
+        statusCode: 201,
+        message: 'Role assigned successfully',
+        data: assignedRole,
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
 
-  // @UseGuards(JwtAuthGuard)
-  // @Get('assign')
-  // async getAssignedRoles(@Query() query: any) {
-  //   try {
-  //     const assignedRoles = await this.roleService.assignRoleList(query);
-  //     return {
-  //       statusCode: 200,
-  //       message: 'Assigned roles retrieved successfully',
-  //       data: assignedRoles,
-  //     };
-  //   } catch (error) {
-  //     throw new BadRequestException(error.message);
-  //   }
-  // }
+  @UseGuards(JwtAuthGuard)
+  @Get('assign/list')
+  async getAssignedRoles(@Query() query: any) {
+    try {
+      const assignedRoles = await this.roleService.assignRoleList(query);
+      return {
+        statusCode: 200,
+        message: 'Assigned roles retrieved successfully',
+        data: assignedRoles,
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
 }
