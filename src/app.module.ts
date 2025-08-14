@@ -11,6 +11,7 @@ import { ValidationModule } from './utilis/validation/validation.module';
 import { MailModule } from './utilis/mail/mail.module';
 import { RolePermissionGuard } from './utilis/guards/role-permission.guard';
 import { JwtAuthGuard } from './admin/auth/jwt-auth.guard';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
@@ -45,6 +46,26 @@ import { JwtAuthGuard } from './admin/auth/jwt-auth.guard';
           throw error;
         }
       },
+    }),
+    // connect redis database
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST,
+        port: parseInt(process.env.REDIS_PORT, 10),
+        //username: process.env.REDIS_USER,
+        //password: process.env.REDIS_PASS,
+        // tls: {}
+      },
+      // other BullMQ options
+      // limiter: {
+      //   max: 100,
+      //   duration: 1000,
+      // },
+      // defaultJobOptions: {
+      //   attempts: 3,
+      //   backoff: 5000,
+      // },
+      // prefix: process.env.REDIS_PREFIX ? process.env.REDIS_PREFIX : 'myapp',
     }),
     UsersModule,
     AuthModule,

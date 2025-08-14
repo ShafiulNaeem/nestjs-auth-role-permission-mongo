@@ -4,7 +4,9 @@ import { Module } from '@nestjs/common';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
+import { BullModule } from '@nestjs/bullmq';
 import { MailService } from './mail.service';
+import { MailProcessor } from './mail.processor';
 
 @Module({
   imports: [
@@ -31,8 +33,13 @@ import { MailService } from './mail.service';
         },
       }),
     }),
+    BullModule.registerQueue({
+      name: 'email', // queue name
+      // optional per-queue defaults:
+      defaultJobOptions: { removeOnComplete: true, attempts: 3 },
+    }),
   ],
-  providers: [MailService],
+  providers: [MailService, MailProcessor],
   exports: [MailService], // Export if you want to use MailService in other modules
 })
 export class MailModule { }
