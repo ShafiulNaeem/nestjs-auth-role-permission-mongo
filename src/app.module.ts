@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit, Logger } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -12,6 +12,8 @@ import { MailModule } from './utilis/mail/mail.module';
 import { RolePermissionGuard } from './utilis/guards/role-permission.guard';
 import { JwtAuthGuard } from './admin/auth/jwt-auth.guard';
 import { BullModule } from '@nestjs/bullmq';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Module({
   imports: [
@@ -67,6 +69,7 @@ import { BullModule } from '@nestjs/bullmq';
       // },
       // prefix: process.env.REDIS_PREFIX ? process.env.REDIS_PREFIX : 'myapp',
     }),
+    
     UsersModule,
     AuthModule,
     RoleModule,
@@ -80,14 +83,15 @@ import { BullModule } from '@nestjs/bullmq';
   controllers: [AppController],
   providers: [
     AppService,
-     {
+    {
       provide: APP_GUARD,
       useClass: JwtAuthGuard, // global AuthGuard
     },
-     {
+    {
       provide: APP_GUARD,
       useClass: RolePermissionGuard,
     },
   ],
 })
+
 export class AppModule { }

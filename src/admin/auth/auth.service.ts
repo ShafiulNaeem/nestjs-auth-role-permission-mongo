@@ -103,11 +103,12 @@ export class AuthService {
     savedTokenObj.name = user.name || '';
     // send email with token
     try {
-      await this.mailService.sendMail(
+      await this.mailService.sendEmailUsingQueue(
         user.email,
         savedTokenObj,
-        `Password Reset Request for ${process.env.APP_NAME}`,
-        'admin/mail/auth/forgot-password'
+        `Password Reset Request Notification From ${process.env.APP_NAME}`,
+        'admin/mail/auth/forgot-password',
+        'send-email'
       );
     } catch (error) {
       throw new Error(`Failed to send password reset email: ${error.message}`);

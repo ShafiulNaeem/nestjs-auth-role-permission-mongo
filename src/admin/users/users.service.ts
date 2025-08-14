@@ -36,7 +36,7 @@ export class UsersService {
         // Convert Mongoose document to plain object for Handlebars
         const userData = savedUser.toObject();
 
-        await this.mailService.sendMail(
+        await this.mailService.sendEmailUsingQueue(
           savedUser.email,
           userData,
           `Welcome to ${process.env.APP_NAME} - Account Created Successfully`,

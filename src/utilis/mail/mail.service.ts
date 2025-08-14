@@ -98,7 +98,7 @@ export class MailService {
         subject: string = 'Welcome to Our Service',
         template: string = 'welcome',
         queueName: string = 'send-email',
-        delayMs = 60_000
+        delayMs = 60_000 // 1 minute delay 
     ) {
         const payload = this.payloadData(email, data, subject, template);
         return this.emailQueue.add(queueName, payload, { delay: delayMs });
