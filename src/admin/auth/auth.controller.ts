@@ -179,7 +179,7 @@ export class AuthController {
   ) {
     try {
       const profile = req.user as any; // Cast to any to access user properties
-      console.log('Google profile:', profile);
+      // console.log('Google profile:', profile);
       const { user, access_token, refresh_token } =
         await this.authService.validateOAuthLogin(profile);
 
