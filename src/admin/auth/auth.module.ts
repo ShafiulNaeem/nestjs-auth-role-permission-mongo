@@ -13,6 +13,11 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { GithubStrategy } from './strategies/github.strategy';
+import { LinkedinStrategy } from './strategies/linkedin.strategy';
+import { TwitterStrategy } from './strategies/twitter.strategy';
+import { FacebookStrategy } from './strategies/facebook.strategy';
+
 
 @Module({
   imports: [
@@ -28,7 +33,25 @@ import { GoogleStrategy } from './strategies/google.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard, GoogleStrategy],
-  exports: [AuthService, JwtStrategy, JwtAuthGuard, GoogleStrategy],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    JwtAuthGuard,
+    GoogleStrategy,
+    FacebookStrategy,
+    TwitterStrategy,
+    LinkedinStrategy,
+    GithubStrategy,
+  ],
+  exports: [
+    AuthService,
+    JwtStrategy,
+    JwtAuthGuard,
+    GoogleStrategy,
+    FacebookStrategy,
+    TwitterStrategy,
+    LinkedinStrategy,
+    GithubStrategy,
+  ],
 })
 export class AuthModule {}
