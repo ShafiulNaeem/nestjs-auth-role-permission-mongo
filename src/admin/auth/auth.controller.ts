@@ -10,6 +10,9 @@ import {
   UsePipes,
   ValidationPipe,
   BadRequestException,
+  Req,
+  Res,
+  Inject,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -23,26 +26,36 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Public } from 'src/utilis/decorators/public.decorator';
+import { AuthGuard } from '@nestjs/passport';
+import {
+  Response as ExpressResponse,
+  Request as ExpressRequest,
+} from 'express';
+import { GoogleStrategy } from './strategies/google.strategy';
 
 @Controller({ version: '1' })
 export class AuthController {
-
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
-  ) { }
+    @Inject(GoogleStrategy)
+    private readonly googleStrategy: GoogleStrategy, // Inject GoogleStrategy to use it for Google authentication
+  ) {}
 
   @Public()
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     try {
-      const user = await this.authService.validateUser(loginDto.email, loginDto.password);
+      const user = await this.authService.validateUser(
+        loginDto.email,
+        loginDto.password,
+      );
       const loginResult = await this.authService.login(user);
 
       return {
         statusCode: 200,
         message: 'Login successful',
-        data: loginResult
+        data: loginResult,
       };
     } catch (error) {
       throw error;
@@ -71,8 +84,10 @@ export class AuthController {
       // },
     }),
   )
-  async register(@Body() registerDto: RegisterDto, @UploadedFile() image: Express.Multer.File) {
-
+  async register(
+    @Body() registerDto: RegisterDto,
+    @UploadedFile() image: Express.Multer.File,
+  ) {
     try {
       let data = registerDto;
       delete data.confirmPassword;
@@ -86,7 +101,6 @@ export class AuthController {
         statusCode: 201,
         message: 'User registered successfully',
         data: await this.usersService.insertUser(data),
-
       };
     } catch (error) {
       throw new BadRequestException('Error processing registration');
@@ -149,5 +163,50 @@ export class AuthController {
       message: 'Logout successful',
       data: null,
     };
+  }
+
+  @Public()
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  async googleAuth(@Req() req: any) {}
+
+  @Public()
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleCallback(
+    @Req() req: ExpressRequest,
+    @Res() res: ExpressResponse,
+  ) {
+    try {
+      const profile = req.user as any; // Cast to any to access user properties
+      console.log('Google profile:', profile);
+      const { user, access_token, refresh_token } =
+        await this.authService.validateOAuthLogin(profile);
+
+      // Option A: Redirect to FE with tokens in URL fragment (avoid logs)
+      // const redirectUrl = new URL(process.env.FRONTEND_URL || 'http://localhost:3000');
+      // redirectUrl.pathname = '/oauth/callback';
+      // redirectUrl.hash = `access=${encodeURIComponent(access_token)}&refresh=${encodeURIComponent(refreshToken)}`;
+      // return res.redirect(redirectUrl.toString());
+
+      // Option B: Set cookies then redirect
+      // res.cookie('access_token', accessToken, { httpOnly: true, secure: true, sameSite: 'lax' });
+      // res.cookie('refresh_token', refreshToken, { httpOnly: true, secure: true, sameSite: 'lax' });
+      // return res.redirect(this.config.get('FRONTEND_URL') + '/oauth/callback');
+
+      // Option C: Direct JSON (handy for mobile deep-links)
+      // Send JSON response
+      return res.json({
+        statusCode: 200,
+        message: 'Google authentication successful',
+        data: {
+          user,
+          access_token,
+          refresh_token,
+        },
+      });
+    } catch (error) {
+      return res.status(400).json({ statusCode: 400, message: error.message });
+    }
   }
 }

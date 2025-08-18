@@ -39,7 +39,7 @@ async function bootstrap() {
   //   }),
   // );
   
-  // Apply global interceptors
+  //Apply global interceptors
   app.useGlobalInterceptors({
     intercept(context, next) {
       const ctx = context.switchToHttp();

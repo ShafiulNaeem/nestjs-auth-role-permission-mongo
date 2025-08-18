@@ -70,6 +70,13 @@ export class UsersService {
     return this.userModel.findOne({ email }).exec();
   }
 
+  async findByProvider(
+    provider: string,
+    providerId: string,
+  ): Promise<User | null> {
+    return this.userModel.findOne({ provider, providerId }).exec();
+  }
+
   async update(id: number, user: any) {
     const existingUser = await this.userModel.findById(id).exec();
     if (!existingUser) {
@@ -144,5 +151,71 @@ export class UsersService {
       },
       permissions: userWithRole.assignRole?.role?.permissions ?? [],
     };
+  }
+
+  async linkIdentity(userId: string, profile: any): Promise<User> {
+    const updateData = {
+      $set: {
+        provider: profile.provider,
+        providerId: profile.providerId,
+        email: profile.email,
+        name: profile.name,
+        image: profile.image,
+      },
+    };
+    const user = await this.userModel.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    });
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return user;
+  }
+
+  async createOAuthUser(data: any) {
+    try {
+      const salt = await bcrypt.genSalt();
+      data.password = await bcrypt.hash('password', salt);
+      data.email_verified_at = new Date();
+      const createdUser = new this.userModel(data);
+      const savedUser = await createdUser.save();
+      return savedUser;
+    } catch (error) {
+      this.logger.error('Failed to create user:', error.message);
+      throw error;
+    }
+  }
+
+  async setRefreshToken(userId: string, refreshToken: string): Promise<User> {
+    // Hash the refresh token using bcrypt
+    const hashedToken = await bcrypt.hash(refreshToken, 10);
+
+    // Store the hashed refresh token in the user's record
+    const user = await this.userModel.findByIdAndUpdate(
+      userId,
+      { $set: { refreshTokenHash: hashedToken } },
+      { new: true }, // Return the updated document
+    );
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+    return user;
+  }
+
+  // To verify the refresh token when needed
+  async verifyRefreshToken(
+    userId: string,
+    refreshToken: string,
+  ): Promise<boolean> {
+    const user = await this.userModel.findById(userId);
+    if (!user || !user.refreshTokenHash) {
+      return false;
+    }
+
+    // Compare the provided refresh token with the stored hash
+    const isValid = await bcrypt.compare(refreshToken, user.refreshTokenHash);
+    return isValid;
   }
 }

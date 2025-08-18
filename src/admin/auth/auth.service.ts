@@ -1,7 +1,10 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { InjectModel } from '@nestjs/mongoose';
-import { PasswordResetToken, PasswordResetTokenDocument } from '../users/schemas/password-reset-token.schema';
+import {
+  PasswordResetToken,
+  PasswordResetTokenDocument,
+} from '../users/schemas/password-reset-token.schema';
 import { Model } from 'mongoose';
 import { MailService } from '../../utilis/mail/mail.service';
 import { randomBytes } from 'crypto';
@@ -10,15 +13,13 @@ import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
-
   constructor(
     @InjectModel(PasswordResetToken.name)
     private passwordResetTokenModel: Model<PasswordResetTokenDocument>,
     private readonly mailService: MailService,
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-  ) { }
-
+  ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
     try {
@@ -48,7 +49,7 @@ export class AuthService {
     const payload = {
       email: user.email,
       sub: user._id,
-      name: user.name
+      name: user.name,
     };
     return {
       user: {
@@ -69,12 +70,11 @@ export class AuthService {
       throw new Error('User not found');
     }
     // delete old password reset tokens based on id or email
-    await this.passwordResetTokenModel.deleteMany({
-      $or: [
-        { userId: user._id },
-        { email: data.email }
-      ]
-    }).exec();
+    await this.passwordResetTokenModel
+      .deleteMany({
+        $or: [{ userId: user._id }, { email: data.email }],
+      })
+      .exec();
 
     let expireTime = 10 * 60 * 1000; // 10 minutes
     let token = null;
@@ -108,19 +108,20 @@ export class AuthService {
         savedTokenObj,
         `Password Reset Request Notification From ${process.env.APP_NAME}`,
         'admin/mail/auth/forgot-password',
-        'send-email'
+        'send-email',
       );
     } catch (error) {
       throw new Error(`Failed to send password reset email: ${error.message}`);
     }
 
     return savedTokenObj;
-
   }
 
   async verifyToken(data: any) {
     // get token wise data
-    const token = await this.passwordResetTokenModel.findOne({ token: data.token }).exec();
+    const token = await this.passwordResetTokenModel
+      .findOne({ token: data.token })
+      .exec();
 
     if (!token) {
       throw new Error('Invalid token');
@@ -133,13 +134,72 @@ export class AuthService {
   }
 
   async resetPassword(data: any) {
-    await this.passwordResetTokenModel.deleteMany({
-      email: data.email
-    }).exec();
+    await this.passwordResetTokenModel
+      .deleteMany({
+        email: data.email,
+      })
+      .exec();
     return await this.usersService.updatePassword(data.email, data.password);
   }
 
   remove(id: number) {
     return `This action removes a #${id} auth`;
+  }
+
+  async validateOAuthLogin(profile: {
+    provider: string;
+    providerId: string;
+    email?: string | null;
+    name?: string | null;
+    image?: string | null;
+  }) {
+    // Find by providerId OR link by email if exists (with care)
+    let user = await this.usersService.findByProvider(
+      profile.provider,
+      profile.providerId,
+    );
+    if (!user && profile.email) {
+      const byEmail = await this.usersService.findByEmail(profile.email);
+      if (byEmail) {
+        // link identity to existing account (optional: require confirmation)
+        user = await this.usersService.linkIdentity(byEmail.id, profile);
+      }
+    }
+    if (!user) {
+      // Create new user if not found
+      user = await this.usersService.createOAuthUser(profile);
+    }
+
+    // Create tokens
+    const access_token = await this.jwtService.signAsync(
+      { sub: user.id, name: user.name, email: user.email },
+      {
+        secret: process.env.JWT_SECRET,
+        expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+      },
+    );
+    const refresh_token = await this.jwtService.signAsync(
+      {
+        sub: user.id,
+        name: user.name,
+        email: user.email,
+        tokenType: 'refresh',
+      },
+      {
+        secret: process.env.JWT_REFRESH_SECRET,
+        expiresIn: '30d',
+      },
+    );
+
+    // Optionally persist hashed refresh token
+    await this.usersService.setRefreshToken(user.id, refresh_token);
+
+    console.log('Returning user and tokens:', {
+      user,
+      access_token,
+      refresh_token,
+    });
+
+    return { user, access_token, refresh_token };
   }
 }
