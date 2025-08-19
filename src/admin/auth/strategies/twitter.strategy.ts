@@ -18,14 +18,14 @@ export class TwitterStrategy extends PassportStrategy(Strategy, 'twitter') {
   validate(accessToken: string, refreshToken: string, profile: any, done: Function) {
     // Twitter often won’t return email; handle null
     const email = profile.emails?.[0]?.value?.toLowerCase?.() ?? null;
-    const avatarUrl = profile.photos?.[0]?.value ?? null;
+    const image = profile.photos?.[0]?.value ?? null;
     const name = profile.displayName ?? profile.username ?? null;
     done(null, {
       provider: 'twitter',
       providerId: profile.id,
       email,
       name,
-      avatarUrl,
+      image,
     });
   }
 }

@@ -18,14 +18,14 @@ export class LinkedinStrategy extends PassportStrategy(Strategy, 'linkedin') {
 
   async validate(accessToken: string, refreshToken: string, profile: any, done: Function) {
     const email = profile.emails?.[0]?.value?.toLowerCase?.() ?? null;
-    const avatarUrl = profile.photos?.[0]?.value ?? null;
+    const image = profile.photos?.[0]?.value ?? null;
 
     done(null, {
       provider: 'linkedin',
       providerId: profile.id,
       email,
       name: profile.displayName ?? null,
-      avatarUrl,
+      image,
     });
   }
 }
