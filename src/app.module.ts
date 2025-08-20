@@ -14,6 +14,8 @@ import { JwtAuthGuard } from './admin/auth/jwt-auth.guard';
 import { BullModule } from '@nestjs/bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { MulterModule } from '@nestjs/platform-express';
+import { FileService } from './utilis/file/file.service';
 
 @Module({
   imports: [
@@ -69,6 +71,11 @@ import { Queue } from 'bullmq';
       // },
       // prefix: process.env.REDIS_PREFIX ? process.env.REDIS_PREFIX : 'myapp',
     }),
+
+    // file 
+     MulterModule.register({
+      dest: './uploads',  // Default destination for file uploads
+    }),
     
     UsersModule,
     AuthModule,
@@ -91,6 +98,7 @@ import { Queue } from 'bullmq';
       provide: APP_GUARD,
       useClass: RolePermissionGuard,
     },
+    FileService,
   ],
 })
 
