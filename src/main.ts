@@ -17,6 +17,7 @@ async function bootstrap() {
   // Configure class-validator to use NestJS's dependency injection container
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
+  // file dir prefix
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
   });
