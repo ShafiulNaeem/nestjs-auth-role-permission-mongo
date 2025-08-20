@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -8,6 +8,7 @@ import * as bcrypt from 'bcryptjs';
 import { MailService } from '../../utilis/mail/mail.service';
 import {AssignRole, AssignRoleModel, AssignRoleDocument} from '../role/schemas/assign-role.schema';
 import { FileService } from 'src/utilis/file/file.service';
+import { Auth } from 'src/utilis/auth-facade/auth';
 
 @Injectable()
 export class UsersService {
@@ -78,7 +79,7 @@ export class UsersService {
     }
   }
 
-  processUserData(
+  private processUserData(
     data: any, 
     file: Express.Multer.File | null, 
     oldFile: string = null, 
@@ -97,15 +98,35 @@ export class UsersService {
     if (file) {
       data.image = FileService.updateFile(file, oldFile, 'users/profile');
     }
+    // add created by if method create
+    if(method == 'create' && Auth.check()){
+      data.created_by = Auth.id();
+    }else{
+      data.updated_by = Auth.id();
+    }
     return data;
   }
 
-  assignRole(roleId: string, userId: string, session: any) {
+  private assignRole(roleId: string, userId: string, session: any) {
     this.assignRoleModel.deleteMany({ userId: userId }, { session });
     new this.assignRoleModel({
       userId: userId,
       roleId: roleId,
     }).save({ session });
+  }
+
+  async create(createdUser:CreateUserDto, file:Express.Multer.File | null)
+  {
+    const session = await this.userModel.db.startSession();
+    try{
+      await session.withTransaction(async() => {
+
+      });
+    }catch(error){
+      await session.endSession();
+      this.logger.error('Failed to create user:', error.message);
+      throw error;
+    }
   }
 
   async findAll() {
