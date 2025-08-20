@@ -150,10 +150,6 @@ export class AuthController {
   @Get('profile')
   async profile(@Request() req) {
 
-    if (Auth.check()) {
-      console.log("auth facade", Auth.user());
-    }
-
     return {
       statusCode: 200,
       message: 'Profile retrieved successfully',

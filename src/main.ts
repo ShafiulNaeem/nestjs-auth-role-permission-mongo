@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { AllExceptionFilter } from './utilis/filters/all-exception.filter';
 import { SuccessResponseInterceptor } from './utilis/interceptors/success-respose.interceptor';
 import { VersioningType, ValidationPipe } from '@nestjs/common';
+import { KeyValueValidationPipe } from './utilis/validation/key-value-validation.pipe';
 import { useContainer } from 'class-validator';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
@@ -31,7 +32,9 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionFilter());
 
   // validation pipe
-  app.useGlobalPipes(new ValidationPipe());
+  // app.useGlobalPipes(new ValidationPipe());
+    // validation pipe (key-value error format)
+  app.useGlobalPipes(new KeyValueValidationPipe());
   // app.useGlobalPipes(
   //   new ValidationPipe({
   //     whitelist: true,

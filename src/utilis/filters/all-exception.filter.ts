@@ -18,6 +18,12 @@ export class AllExceptionFilter implements ExceptionFilter {
     let message = 'Internal server error';
     let errors = null;
 
+    // console.log('Exception caught by AllExceptionFilter:', {
+    //   exceptionName: exception.name,
+    //   path: request.url,
+    //   exceptionResponse: exception.getResponse(),
+    // });
+
     // If it's an HttpException (manually thrown)
     if (exception instanceof HttpException) {
       const exceptionResponse = exception.getResponse();
@@ -34,16 +40,7 @@ export class AllExceptionFilter implements ExceptionFilter {
         message = exceptionResponse as string;
       }
     }
-
-    // Mongoose validation error (or similar custom error objects)
-    else if (exception.name === 'ValidationError') {
-      status = HttpStatus.UNPROCESSABLE_ENTITY;
-      message = 'Validation failed';
-      errors = Object.keys(exception.errors).reduce((acc: any, key: string) => {
-        acc[key] = exception.errors[key].message;
-        return acc;
-      }, {});
-    }
+  
 
     // Any other error with a message
     else if (exception.message) {
