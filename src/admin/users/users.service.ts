@@ -6,11 +6,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserDocument } from './schemas/user.schema';
 import * as bcrypt from 'bcryptjs';
 import { MailService } from '../../utilis/mail/mail.service';
-import {
-  AssignRole,
-  AssignRoleModel,
-  AssignRoleDocument,
-} from '../role/schemas/assign-role.schema';
+import {AssignRole, AssignRoleModel, AssignRoleDocument} from '../role/schemas/assign-role.schema';
+import { FileService } from 'src/utilis/file/file.service';
 
 @Injectable()
 export class UsersService {
@@ -24,6 +21,8 @@ export class UsersService {
 
     @InjectModel(AssignRole.name)
     private assignRoleModel: Model<AssignRoleDocument>,
+
+    // private readonly fileService: FileService,
   ) {}
 
   async insertUser(data: any) {
@@ -79,7 +78,13 @@ export class UsersService {
     }
   }
 
-  processUserData(data: any, oldImage: string = null) {
+  processUserData(
+    data: any, 
+    file: Express.Multer.File | null, 
+    oldFile: string = null, 
+    method: 'create' | 'update'
+  ) {
+
     const salt = bcrypt.genSaltSync();
     if (data.password) {
       data.password = bcrypt.hashSync(data.password, salt);
@@ -87,6 +92,10 @@ export class UsersService {
     data.email_verified_at = new Date();
     if ('roleId' in data) {
       delete data.roleId;
+    }
+    // update file information
+    if (file) {
+      data.image = FileService.updateFile(file, oldFile, 'users/profile');
     }
     return data;
   }

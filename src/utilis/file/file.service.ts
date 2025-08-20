@@ -6,7 +6,7 @@ import * as path from 'path';
 @Injectable()
 export class FileService {
 
-  uploadFile(file: Express.Multer.File, fileDir: string = 'files', name: string = ''): null | string {
+  static uploadFile(file: Express.Multer.File, fileDir: string = 'files', name: string = ''): null | string {
     if (!file) {
       return null;
     }
@@ -25,7 +25,7 @@ export class FileService {
     return filePath;
   }
 
-  updateFile(newFile: Express.Multer.File, oldFile: string = null, fileDir: string = 'files', name: string = ''): string {
+  static updateFile(newFile: Express.Multer.File, oldFile: string = null, fileDir: string = 'files', name: string = ''): string {
     if (!newFile) {
       return oldFile;
     }
@@ -39,7 +39,7 @@ export class FileService {
     return this.uploadFile(newFile, fileDir, name);
   }
 
-  deleteFile(filePath: string): void {
+  static deleteFile(filePath: string): void {
     const fileLocation = path.join(__dirname, '..', 'storage', filePath);
     if (fs.existsSync(fileLocation)) {
       fs.unlinkSync(fileLocation); // Delete the file
