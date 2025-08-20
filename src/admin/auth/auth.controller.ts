@@ -32,6 +32,7 @@ import {
   Request as ExpressRequest,
 } from 'express';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { Auth } from 'src/utilis/auth-facade/auth';
 
 @Controller({ version: '1' })
 export class AuthController {
@@ -148,6 +149,11 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   async profile(@Request() req) {
+
+    if (Auth.check()) {
+      console.log("auth facade", Auth.user());
+    }
+
     return {
       statusCode: 200,
       message: 'Profile retrieved successfully',

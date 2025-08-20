@@ -1,4 +1,4 @@
-import { Module, OnModuleInit, Logger } from '@nestjs/common';
+import { Module, OnModuleInit, Logger, MiddlewareConsumer } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -16,6 +16,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { MulterModule } from '@nestjs/platform-express';
 import { FileService } from './utilis/file/file.service';
+import { AuthFacadeMiddleware } from './utilis/middleware/auth-facade.middleware';
 
 @Module({
   imports: [
@@ -80,12 +81,8 @@ import { FileService } from './utilis/file/file.service';
     UsersModule,
     AuthModule,
     RoleModule,
-    ValidationModule, // Add global validation module
-
-
-    // import mail module
+    ValidationModule,
     MailModule,
-
   ],
   controllers: [AppController],
   providers: [
@@ -102,4 +99,9 @@ import { FileService } from './utilis/file/file.service';
   ],
 })
 
-export class AppModule { }
+export class AppModule {
+  // apply auth facade middleware
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(AuthFacadeMiddleware).forRoutes('*');
+  }
+}
