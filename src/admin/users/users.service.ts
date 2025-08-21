@@ -1,14 +1,15 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, FilterQuery } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserDocument } from './schemas/user.schema';
 import * as bcrypt from 'bcryptjs';
 import { MailService } from '../../utilis/mail/mail.service';
-import {AssignRole, AssignRoleModel, AssignRoleDocument} from '../role/schemas/assign-role.schema';
+import { AssignRole, AssignRoleModel, AssignRoleDocument } from '../role/schemas/assign-role.schema';
 import { FileService } from 'src/utilis/file/file.service';
 import { Auth } from 'src/utilis/auth-facade/auth';
+import { Role, RoleDocument } from '../role/schemas/role.schema';
 
 @Injectable()
 export class UsersService {
@@ -23,8 +24,11 @@ export class UsersService {
     @InjectModel(AssignRole.name)
     private assignRoleModel: Model<AssignRoleDocument>,
 
+    @InjectModel(Role.name)
+    private roleModel: Model<RoleDocument>,
+
     // private readonly fileService: FileService,
-  ) {}
+  ) { }
 
   async insertUser(data: any) {
     const session = await this.userModel.db.startSession();
@@ -71,7 +75,7 @@ export class UsersService {
         );
       }
 
-      return savedUser;
+      return this.userDetails(savedUser._id);
     } catch (error) {
       await session.endSession();
       this.logger.error('Failed to create user:', error.message);
@@ -80,9 +84,9 @@ export class UsersService {
   }
 
   private processUserData(
-    data: any, 
-    file: Express.Multer.File | null, 
-    oldFile: string = null, 
+    data: any,
+    file: Express.Multer.File | null,
+    oldFile: string = null,
     method: 'create' | 'update'
   ) {
 
@@ -91,18 +95,21 @@ export class UsersService {
       data.password = bcrypt.hashSync(data.password, salt);
     }
     data.email_verified_at = new Date();
-    if ('roleId' in data) {
-      delete data.roleId;
-    }
     // update file information
     if (file) {
       data.image = FileService.updateFile(file, oldFile, 'users/profile');
     }
     // add created by if method create
-    if(method == 'create' && Auth.check()){
+    if (method == 'create' && Auth.check()) {
       data.created_by = Auth.id();
-    }else{
+    } else {
       data.updated_by = Auth.id();
+    }
+    if ('roleId' in data) {
+      delete data.roleId;
+    }
+    if ('id' in data) {
+      delete data.id;
     }
     return data;
   }
@@ -115,21 +122,109 @@ export class UsersService {
     }).save({ session });
   }
 
-  async create(createdUser:CreateUserDto, file:Express.Multer.File | null)
-  {
-    const session = await this.userModel.db.startSession();
-    try{
-      await session.withTransaction(async() => {
+  private sendWelcomeEmail(savedUser: User) {
+    try {
+      const userData = savedUser.toObject();
+      this.mailService.sendEmailUsingQueue(
+        savedUser.email,
+        userData,
+        `Welcome to ${process.env.APP_NAME} - Account Created Successfully`,
+        'admin/mail/auth/register',
+      );
+      this.logger.log(`Welcome email sent to ${savedUser.email}`);
+    } catch (emailError) {
+      // Log email error but don't fail the user creation
+      this.logger.error(
+        `Failed to send welcome email to ${savedUser.email}:`,
+        emailError.message,
+      );
+    }
+  }
 
+  async create(createdUser: CreateUserDto, file: Express.Multer.File | null) {
+    const session = await this.userModel.db.startSession();
+    let savedUser;
+    try {
+      await session.withTransaction(async () => {
+        // process user data
+        const data = this.processUserData(createdUser, file, null, 'create');
+        const newUser = new this.userModel(data);
+        savedUser = await newUser.save({ session });
+        const roleId = data?.roleId ?? null;
+        // assign role to user
+        if (roleId) {
+          this.assignRole(roleId, savedUser._id, session);
+        }
       });
-    }catch(error){
+      // send welcome email
+      this.sendWelcomeEmail(savedUser);
+      return this.userDetails(savedUser._id);
+    } catch (error) {
       await session.endSession();
       this.logger.error('Failed to create user:', error.message);
       throw error;
     }
   }
 
-  async findAll() {
+  async update(id: string, updateUserDto: UpdateUserDto, file: Express.Multer.File = null) {
+    const session = await this.userModel.db.startSession();
+    const existingUser = await this.findOne(id);
+    if (!existingUser) {
+      throw new Error('User not found');
+    }
+    let savedUser;
+    try {
+      await session.withTransaction(async () => {
+        // process user data
+        const data = this.processUserData(updateUserDto, file, existingUser.image, 'update');
+        savedUser = this.userModel.findByIdAndUpdate(id, data, { new: true, session }).exec();
+        const roleId = data?.roleId ?? null;
+        // assign role to user
+        if (roleId) {
+          this.assignRole(roleId, id, session);
+        }
+      });
+      // send welcome email
+      this.sendWelcomeEmail(savedUser);
+      return this.userDetails(id);
+    } catch (error) {
+      await session.endSession();
+      this.logger.error('Failed to update user:', error.message);
+      throw error;
+    }
+  }
+
+  private filter(params: any) {
+    const filter: FilterQuery<UserDocument> = {};
+    // search by name, email
+    if (params?.search) {
+      const searchRegex = { $regex: String(params.search), $options: 'i' };
+      // Get role IDs that have name matching the search
+      const matchedRoleIds = this.roleModel.distinct('_id', {
+        name: searchRegex,
+      });
+      // get user IDs that have matching roles
+      const matchedUserIds = this.assignRoleModel.distinct('userId', {
+        roleId: { $in: matchedRoleIds },
+      });
+      filter.$or = [
+        { name: searchRegex },
+        { email: searchRegex },
+        { _id: { $in: matchedUserIds } },
+      ];
+    }
+    // role ID
+    if (params?.roleId) {
+      // get user IDs that have matching roles
+      const userIds = this.assignRoleModel.distinct('userId', {
+        roleId: params.roleId,
+      });
+      filter._id = { $in: userIds };
+    }
+    return { filter };
+  }
+
+  findAll(params: any = null) {
     return this.userModel.find().exec();
   }
 
@@ -148,21 +243,6 @@ export class UsersService {
     return this.userModel.findOne({ provider, providerId }).exec();
   }
 
-  async update(id: number, user: any) {
-    const existingUser = await this.userModel.findById(id).exec();
-    if (!existingUser) {
-      throw new Error('User not found');
-    }
-    Object.assign(existingUser, user);
-    if (user.password) {
-      const salt = await bcrypt.genSalt();
-      existingUser.password = await bcrypt.hash(existingUser.password, salt);
-    }
-    return this.userModel
-      .findByIdAndUpdate(id, existingUser, { new: true })
-      .exec();
-  }
-
   async updatePassword(email: string, password: string) {
     const user = await this.findByEmail(email);
     if (!user) {
@@ -175,8 +255,24 @@ export class UsersService {
       .exec();
   }
 
-  remove(id: number) {
-    return this.userModel.findByIdAndDelete(id).exec();
+  remove(id: string) {
+    const session = this.userModel.db.startSession() as any;
+    const user = this.userModel.findById(id).exec();
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    try {
+      session.withTransaction(async () => {
+        // delete assign role
+        this.assignRoleModel.deleteMany({ userId: id }, { session });
+        // delete user
+        this.userModel.findByIdAndDelete(id, { session });
+      });
+    } catch (error) {
+      this.logger.error('Failed to delete user roles:', error.message);
+      throw error;
+    }
   }
 
   async userDetails(userId: string) {

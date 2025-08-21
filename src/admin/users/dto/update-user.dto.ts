@@ -1,38 +1,41 @@
 import { IsEmail, IsNotEmpty, MinLength, IsBoolean, IsOptional } from 'class-validator';
-import { Unique, UniqueRule } from '../../../utilis/validation';
+import { Type } from 'class-transformer';
+import { Unique, Exists } from '../../../utilis/validation';
 import { Match } from '../../../utilis/decorators/match.decorator';
 
 /**
  * DTO for updating user information
  */
 export class UpdateUserDto {
-    @IsOptional()
-    @IsNotEmpty()
-    name?: string;
 
-    @IsOptional()
+    @IsNotEmpty()
+    name: string;
+
     @IsEmail()
     @IsNotEmpty()
     @Unique('users', 'email', { ignoreField: 'id' })
-    email?: string;
+    email: string;
 
-    @IsOptional()
     @IsNotEmpty()
     @MinLength(6)
-    password?: string;
+    password: string;
 
-    @IsOptional()
     @IsNotEmpty()
     @MinLength(6)
     @Match('password', { message: 'Passwords do not match' })
-    confirmPassword?: string;
+    confirmPassword: string;
 
-    @IsOptional()
     @IsBoolean()
-    status?: boolean;
+    @IsNotEmpty()
+    @Type(() => Boolean)
+    status: boolean;
 
     @IsOptional()
     image?: string;
+
+    @IsOptional()
+    @Exists('roles', '_id', { message: 'Role does not exist' })
+    roleId?: string;
 
     // This field would typically come from the route params or auth context
     @IsOptional()
