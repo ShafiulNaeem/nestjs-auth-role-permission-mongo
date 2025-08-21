@@ -1,6 +1,6 @@
 import { IsEmail, IsNotEmpty, MinLength, IsBoolean, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Unique } from '../../../utilis/validation';
+import { Unique, Exists} from '../../../utilis/validation';
 import { Match } from '../../../utilis/decorators/match.decorator';
 
 /**
@@ -32,4 +32,8 @@ export class RegisterDto {
 
     @IsOptional()
     image?: string;
+
+    @IsOptional()
+    @Exists('roles','_id',{message: 'Role does not exist'})
+    roleId?: string;
 }

@@ -1,4 +1,4 @@
-import { Module, OnModuleInit, Logger } from '@nestjs/common';
+import { Module, OnModuleInit, Logger, MiddlewareConsumer } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -14,6 +14,9 @@ import { JwtAuthGuard } from './admin/auth/jwt-auth.guard';
 import { BullModule } from '@nestjs/bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { MulterModule } from '@nestjs/platform-express';
+import { FileService } from './utilis/file/file.service';
+import { AuthFacadeMiddleware } from './utilis/middleware/auth-facade.middleware';
 
 @Module({
   imports: [
@@ -69,16 +72,17 @@ import { Queue } from 'bullmq';
       // },
       // prefix: process.env.REDIS_PREFIX ? process.env.REDIS_PREFIX : 'myapp',
     }),
+
+    // file 
+     MulterModule.register({
+      dest: './uploads',  // Default destination for file uploads
+    }),
     
     UsersModule,
     AuthModule,
     RoleModule,
-    ValidationModule, // Add global validation module
-
-
-    // import mail module
+    ValidationModule,
     MailModule,
-
   ],
   controllers: [AppController],
   providers: [
@@ -91,7 +95,13 @@ import { Queue } from 'bullmq';
       provide: APP_GUARD,
       useClass: RolePermissionGuard,
     },
+    FileService,
   ],
 })
 
-export class AppModule { }
+export class AppModule {
+  // apply auth facade middleware
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(AuthFacadeMiddleware).forRoutes('*');
+  }
+}

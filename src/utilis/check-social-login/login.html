@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Social OAuth Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f7f7f7;
+    }
+
+    .login-container {
+      text-align: center;
+      border: 1px solid #ccc;
+      padding: 40px;
+      border-radius: 10px;
+      background-color: white;
+    }
+
+    .login-container h1 {
+      margin-bottom: 20px;
+    }
+
+    .login-button {
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-size: 16px;
+      color: white;
+      cursor: pointer;
+      text-align: center;
+      margin: 10px;
+      text-decoration: none;
+    }
+
+    .google {
+      background-color: #4285F4;
+    }
+
+    .google:hover {
+      background-color: #357ae8;
+    }
+
+    .facebook {
+      background-color: #3b5998;
+    }
+
+    .facebook:hover {
+      background-color: #2d4373;
+    }
+
+    .linkedin {
+      background-color: #0077B5;
+    }
+
+    .linkedin:hover {
+      background-color: #005f85;
+    }
+
+    .twitter {
+      background-color: #1DA1F2;
+    }
+
+    .twitter:hover {
+      background-color: #0d8dda;
+    }
+
+    .github {
+      background-color: #333;
+    }
+
+    .github:hover {
+      background-color: #444;
+    }
+
+    .login-button img {
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1>Social OAuth Login</h1>
+    <a href="http://localhost:3000/api/v1/google" class="login-button google">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/4/4c/Google_2015_logo.svg" alt="Google Logo">
+      Login with Google
+    </a>
+    <a href="http://localhost:3000/api/v1/facebook" class="login-button facebook">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook Logo">
+      Login with Facebook
+    </a>
+    <a href="http://localhost:3000/api/v1/linkedin" class="login-button linkedin">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/0/01/LinkedIn_Logo_2013.svg" alt="LinkedIn Logo">
+      Login with LinkedIn
+    </a>
+    <a href="http://localhost:3000/api/v1/twitter" class="login-button twitter">
+      <img src="https://upload.wikimedia.org/wikipedia/en/6/60/Twitter_Logo_2012.svg" alt="Twitter Logo">
+      Login with Twitter
+    </a>
+    <a href="http://localhost:3000/api/v1/github" class="login-button github">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg" alt="GitHub Logo">
+      Login with GitHub
+    </a>
+  </div>
+</body>
+</html>

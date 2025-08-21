@@ -32,6 +32,7 @@ import {
   Request as ExpressRequest,
 } from 'express';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { Auth } from 'src/utilis/auth-facade/auth';
 
 @Controller({ version: '1' })
 export class AuthController {
@@ -148,6 +149,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   async profile(@Request() req) {
+
     return {
       statusCode: 200,
       message: 'Profile retrieved successfully',
@@ -179,7 +181,7 @@ export class AuthController {
   ) {
     try {
       const profile = req.user as any; // Cast to any to access user properties
-      console.log('Google profile:', profile);
+      // console.log('Google profile:', profile);
       const { user, access_token, refresh_token } =
         await this.authService.validateOAuthLogin(profile);
 
@@ -199,6 +201,140 @@ export class AuthController {
       return res.json({
         statusCode: 200,
         message: 'Google authentication successful',
+        data: {
+          user,
+          access_token,
+          refresh_token,
+        },
+      });
+    } catch (error) {
+      return res.status(400).json({ statusCode: 400, message: error.message });
+    }
+  }
+
+  // github
+  @Public()
+  @Get('github')
+  @UseGuards(AuthGuard('github'))
+  async githubAuth(@Req() req: any) {}
+
+  @Public()
+  @Get('github/callback')
+  @UseGuards(AuthGuard('github'))
+  async githubCallback(
+    @Req() req: ExpressRequest,
+    @Res() res: ExpressResponse,
+  ) {
+    try {
+      const profile = req.user as any; // Cast to any to access user properties
+      console.log('GitHub profile:', profile);
+      const { user, access_token, refresh_token } =
+        await this.authService.validateOAuthLogin(profile);
+
+      // Send JSON response
+      return res.json({
+        statusCode: 200,
+        message: 'GitHub authentication successful',
+        data: {
+          user,
+          access_token,
+          refresh_token,
+        },
+      });
+    } catch (error) {
+      return res.status(400).json({ statusCode: 400, message: error.message });
+    }
+  }
+
+  @Public()
+  @Get('linkedin')
+  @UseGuards(AuthGuard('linkedin'))
+  async linkedinAuth(@Req() req: any) {}
+
+  @Public()
+  @Get('linkedin/callback')
+  @UseGuards(AuthGuard('linkedin'))
+  async linkedinCallback(
+    @Req() req: ExpressRequest,
+    @Res() res: ExpressResponse,
+  ) {
+    try {
+      const profile = req.user as any; // Cast to any to access user properties
+      console.log('LinkedIn profile:', profile);
+      const { user, access_token, refresh_token } =
+        await this.authService.validateOAuthLogin(profile);
+
+      // Send JSON response
+      return res.json({
+        statusCode: 200,
+        message: 'LinkedIn authentication successful',
+        data: {
+          user,
+          access_token,
+          refresh_token,
+        },
+      });
+    } catch (error) {
+      return res.status(400).json({ statusCode: 400, message: error.message });
+    }
+  }
+
+  @Public()
+  @Get('twitter')
+  @UseGuards(AuthGuard('twitter'))
+  async twitterAuth(@Req() req: any) {}
+
+  @Public()
+  @Get('twitter/callback')
+  @UseGuards(AuthGuard('twitter'))
+  async twitterCallback(
+    @Req() req: ExpressRequest,
+    @Res() res: ExpressResponse,
+  ) {
+    try {
+      const profile = req.user as any; // Cast to any to access user properties
+      console.log('Twitter profile:', profile);
+      const { user, access_token, refresh_token } =
+        await this.authService.validateOAuthLogin(profile);
+
+      // Send JSON response
+      return res.json({
+        statusCode: 200,
+        message: 'Twitter authentication successful',
+        data: {
+          user,
+          access_token,
+          refresh_token,
+        },
+      });
+    } catch (error) {
+      return res.status(400).json({ statusCode: 400, message: error.message });
+    }
+  }
+
+  // facebook
+  @Public()
+  @Get('facebook')
+  @UseGuards(AuthGuard('facebook'))
+  async facebookAuth(@Req() req: any) {}
+
+  @Public()
+  @Get('facebook/callback')
+  @UseGuards(AuthGuard('facebook'))
+  async facebookCallback(
+    @Req() req: ExpressRequest,
+    @Res() res: ExpressResponse,
+  ) {
+    try {
+      const profile = req.user as any; // Cast to any to access user properties
+      console.log('Facebook profile:', profile);
+      const { user, access_token, refresh_token } =
+        await this.authService.validateOAuthLogin(profile);
+
+      // Send JSON response
+      return res.json({
+        statusCode: 200,
+        message: 'Facebook authentication successful',
         data: {
           user,
           access_token,

@@ -1,11 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserDocument } from './schemas/user.schema';
 import * as bcrypt from 'bcryptjs';
-import { MailService } from '../../utilis/mail/mail.service'; // Import MailService to send emails
+import { MailService } from '../../utilis/mail/mail.service';
+import {AssignRole, AssignRoleModel, AssignRoleDocument} from '../role/schemas/assign-role.schema';
+import { FileService } from 'src/utilis/file/file.service';
+import { Auth } from 'src/utilis/auth-facade/auth';
 
 @Injectable()
 export class UsersService {
@@ -14,24 +17,41 @@ export class UsersService {
   constructor(
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
-    private readonly mailService: MailService, // Inject MailService to use it for sending emails
+
+    private readonly mailService: MailService,
+
+    @InjectModel(AssignRole.name)
+    private assignRoleModel: Model<AssignRoleDocument>,
+
+    // private readonly fileService: FileService,
   ) {}
 
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
-  }
-
   async insertUser(data: any) {
+    const session = await this.userModel.db.startSession();
+    let savedUser;
     try {
-      const salt = await bcrypt.genSalt();
-      data.password = await bcrypt.hash(data.password, salt);
-      data.email_verified_at = new Date(); // Set email verification date to now
+      await session.withTransaction(async () => {
+        const salt = await bcrypt.genSalt();
+        if (!data.password) {
+          data.password = await bcrypt.hash(data.password, salt);
+        }
+        data.email_verified_at = new Date(); // Set email verification date to now
 
-      // Create a new user instance
-      const createdUser = new this.userModel(data);
-      const savedUser = await createdUser.save();
+        // Check if roleId exists and has a valid value (not null or undefined)
+        const roleId = data?.roleId ?? null;
+        if ('roleId' in data) {
+          delete data.roleId;
+        }
+        // Create a new user instance
+        const createdUser = new this.userModel(data);
+        savedUser = await createdUser.save({ session });
 
-      // Send a welcome email after user registration
+        // assign role to user
+        if (roleId) {
+          this.assignRole(roleId, savedUser._id, session);
+        }
+      });
+
       try {
         // Convert Mongoose document to plain object for Handlebars
         const userData = savedUser.toObject();
@@ -53,6 +73,57 @@ export class UsersService {
 
       return savedUser;
     } catch (error) {
+      await session.endSession();
+      this.logger.error('Failed to create user:', error.message);
+      throw error;
+    }
+  }
+
+  private processUserData(
+    data: any, 
+    file: Express.Multer.File | null, 
+    oldFile: string = null, 
+    method: 'create' | 'update'
+  ) {
+
+    const salt = bcrypt.genSaltSync();
+    if (data.password) {
+      data.password = bcrypt.hashSync(data.password, salt);
+    }
+    data.email_verified_at = new Date();
+    if ('roleId' in data) {
+      delete data.roleId;
+    }
+    // update file information
+    if (file) {
+      data.image = FileService.updateFile(file, oldFile, 'users/profile');
+    }
+    // add created by if method create
+    if(method == 'create' && Auth.check()){
+      data.created_by = Auth.id();
+    }else{
+      data.updated_by = Auth.id();
+    }
+    return data;
+  }
+
+  private assignRole(roleId: string, userId: string, session: any) {
+    this.assignRoleModel.deleteMany({ userId: userId }, { session });
+    new this.assignRoleModel({
+      userId: userId,
+      roleId: roleId,
+    }).save({ session });
+  }
+
+  async create(createdUser:CreateUserDto, file:Express.Multer.File | null)
+  {
+    const session = await this.userModel.db.startSession();
+    try{
+      await session.withTransaction(async() => {
+
+      });
+    }catch(error){
+      await session.endSession();
       this.logger.error('Failed to create user:', error.message);
       throw error;
     }
@@ -204,7 +275,6 @@ export class UsersService {
     return user;
   }
 
-  // To verify the refresh token when needed
   async verifyRefreshToken(
     userId: string,
     refreshToken: string,
