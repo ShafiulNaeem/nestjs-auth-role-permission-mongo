@@ -18,7 +18,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { RolePermission } from '../../utilis/decorators/role-permission.decorator';
 
-@Controller({ version: '1' ,path: 'role'})
+@Controller({ version: '1' ,path: 'roles'})
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, FilterQuery } from 'mongoose';
+import { Model, FilterQuery, PaginateModel } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserDocument } from './schemas/user.schema';
@@ -17,7 +17,7 @@ export class UsersService {
 
   constructor(
     @InjectModel(User.name)
-    private userModel: Model<UserDocument>,
+    private userModel: PaginateModel<UserDocument>,
 
     private readonly mailService: MailService,
 
@@ -25,9 +25,7 @@ export class UsersService {
     private assignRoleModel: Model<AssignRoleDocument>,
 
     @InjectModel(Role.name)
-    private roleModel: Model<RoleDocument>,
-
-    // private readonly fileService: FileService,
+    private roleModel: Model<RoleDocument>
   ) { }
 
   async insertUser(data: any) {
@@ -141,15 +139,15 @@ export class UsersService {
     }
   }
 
-  async create(createdUser: CreateUserDto, file: Express.Multer.File | null) {
-    const session = await this.userModel.db.startSession();
+  create(createdUser: CreateUserDto, file: Express.Multer.File | null) {
+    const session = this.userModel.db.startSession() as any;
     let savedUser;
     try {
-      await session.withTransaction(async () => {
+      session.withTransaction(async () => {
         // process user data
         const data = this.processUserData(createdUser, file, null, 'create');
         const newUser = new this.userModel(data);
-        savedUser = await newUser.save({ session });
+        savedUser = newUser.save({ session });
         const roleId = data?.roleId ?? null;
         // assign role to user
         if (roleId) {
@@ -160,21 +158,21 @@ export class UsersService {
       this.sendWelcomeEmail(savedUser);
       return this.userDetails(savedUser._id);
     } catch (error) {
-      await session.endSession();
+      session.endSession();
       this.logger.error('Failed to create user:', error.message);
       throw error;
     }
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto, file: Express.Multer.File = null) {
-    const session = await this.userModel.db.startSession();
-    const existingUser = await this.findOne(id);
+  update(id: string, updateUserDto: UpdateUserDto, file: Express.Multer.File = null) {
+    const session = this.userModel.db.startSession() as any;
+    const existingUser = this.userModel.findById(id).exec() as any;
     if (!existingUser) {
       throw new Error('User not found');
     }
     let savedUser;
     try {
-      await session.withTransaction(async () => {
+      session.withTransaction(async () => {
         // process user data
         const data = this.processUserData(updateUserDto, file, existingUser.image, 'update');
         savedUser = this.userModel.findByIdAndUpdate(id, data, { new: true, session }).exec();
@@ -188,7 +186,7 @@ export class UsersService {
       this.sendWelcomeEmail(savedUser);
       return this.userDetails(id);
     } catch (error) {
-      await session.endSession();
+      session.endSession();
       this.logger.error('Failed to update user:', error.message);
       throw error;
     }
@@ -221,11 +219,41 @@ export class UsersService {
       });
       filter._id = { $in: userIds };
     }
-    return { filter };
+    return filter;
   }
 
   findAll(params: any = null) {
-    return this.userModel.find().exec();
+    const collation = { locale: 'en', strength: 1 };
+    const filter = this.filter(params);
+    const sort = 'createdAt -1';
+    const populate = {
+      path: 'assignRole',
+      select: 'roleId',
+      populate: {
+        path: 'role',
+        select: 'name is_manage_all'
+      }
+    };
+    // if params has not limit or limit < 1 -> no pagination
+    const limit = Number(params?.limit ?? 0);
+    if (!limit || limit < 1) {
+      return this.userModel
+        .find(filter)
+        // .collation(collation)
+        .sort(sort)
+        .populate(populate)
+        .lean()
+        .exec();
+    }
+
+    const options = {
+      page: params.page || 1,
+      limit: params.limit || 10,
+      sort: sort,
+      // collation: collation,
+      populate: populate,
+    };
+    return this.userModel.paginate(filter, options);
   }
 
   async findOne(id: string) {

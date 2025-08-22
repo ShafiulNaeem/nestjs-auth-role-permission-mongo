@@ -1,34 +1,106 @@
-import { Controller, Get, Post, Body, Patch, Put, Param, Delete, BadRequestException } from '@nestjs/common';
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Put, 
+  Param, 
+  Query,
+  Delete, 
+  UseGuards,
+  BadRequestException, 
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { stat } from 'fs';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolePermission } from 'src/utilis/decorators/role-permission.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
+  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    //return this.usersService.create(createUserDto);
+  @RolePermission('User','create')
+  @UseInterceptors(FileInterceptor('image'))
+  create(
+    @Body() createUserDto: CreateUserDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 2 * 1024 * 1024 }), // 2 MB
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png)$/ }), // only jpg/png
+        ],
+        fileIsRequired: false, // optional file
+      }),
+    )
+    file: Express.Multer.File
+  ) {
+    return {
+      statusCode: 201,
+      message: 'User created successfully',
+      data: this.usersService.create(createUserDto, file),
+    };
   }
 
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
-  }
-
+  @UseGuards(JwtAuthGuard)
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    // return this.usersService.update(+id, updateUserDto);
+  @RolePermission('User','update')
+  @UseInterceptors(FileInterceptor('image'))
+  update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 2 * 1024 * 1024 }), // 2 MB
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png)$/ }), // only jpg/png
+        ],
+        fileIsRequired: false, // optional file
+      }),
+    )
+    file: Express.Multer.File
+  ) {
+    return {
+      statusCode: 200,
+      message: 'User updated successfully',
+      data: this.usersService.update(id, updateUserDto, file),
+    };
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  @RolePermission('User','list')
+  findAll(@Query() query: any) {
+    return {
+      statusCode: 200,
+      message: 'Users retrieved successfully',
+      data: this.usersService.findAll(query),
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  @RolePermission('User','show')
+  findOne(@Param('id') id: string) {
+    return {
+      statusCode: 200,
+      message: 'User retrieved successfully',
+      data: this.usersService.userDetails(id),
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
+  @RolePermission('User','delete')
   remove(@Param('id') id: string) {
     this.usersService.remove(id);
     return {
