@@ -64,7 +64,7 @@ export class UsersController {
   @Put(':id')
   @RolePermission('User', 'update')
   @UseInterceptors(FileInterceptor('image'))
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
     // @UploadedFile(
@@ -84,11 +84,20 @@ export class UsersController {
     }))
     file: Express.Multer.File
   ) {
-    return {
-      statusCode: 200,
-      message: 'User updated successfully',
-      data: this.usersService.update(id, updateUserDto, file),
-    };
+    try {
+      const userData = await this.usersService.update(id, updateUserDto, file);
+      return {
+        statusCode: 200,
+        message: 'User updated successfully',
+        data: userData
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: 'Failed to update user',
+        error: error.message
+      });
+    }
   }
 
   @UseGuards(JwtAuthGuard)

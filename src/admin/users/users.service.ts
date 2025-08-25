@@ -191,8 +191,7 @@ export class UsersService {
           await this.assignRole(roleId, id, session);
         }
       });
-      // send welcome email
-      await this.sendWelcomeEmail(savedUser);
+      
       return this.userDetails(id);
     } catch (error) {
       this.logger.error('Failed to update user:', error.message);

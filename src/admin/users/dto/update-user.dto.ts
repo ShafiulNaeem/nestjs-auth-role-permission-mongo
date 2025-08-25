@@ -9,6 +9,7 @@ import { Match } from '../../../utilis/decorators/match.decorator';
 export class UpdateUserDto {
 
     @IsNotEmpty()
+    @Unique('users', 'name', { ignoreField: 'id' })
     name: string;
 
     @IsEmail()
