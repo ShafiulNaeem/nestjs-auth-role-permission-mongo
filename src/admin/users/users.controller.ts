@@ -45,7 +45,7 @@ export class UsersController {
   ) {
     try {
       const userData = await this.usersService.create(createUserDto, file);
-      console.log("user:data", userData);
+      // console.log("user:data", userData);
       return {
         statusCode: 201,
         message: 'User created successfully',

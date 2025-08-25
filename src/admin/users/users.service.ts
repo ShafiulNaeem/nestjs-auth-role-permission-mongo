@@ -34,7 +34,7 @@ export class UsersService {
     try {
       await session.withTransaction(async () => {
         const salt = await bcrypt.genSalt();
-        if (!data.password) {
+        if (data.password) {
           data.password = await bcrypt.hash(data.password, salt);
         }
         data.email_verified_at = new Date(); // Set email verification date to now
@@ -50,7 +50,7 @@ export class UsersService {
 
         // assign role to user
         if (roleId) {
-          this.assignRole(roleId, savedUser._id, session);
+          await this.assignRole(roleId, savedUser._id, session);
         }
       });
 
@@ -75,9 +75,10 @@ export class UsersService {
 
       return this.userDetails(savedUser._id);
     } catch (error) {
-      await session.endSession();
       this.logger.error('Failed to create user:', error.message);
       throw error;
+    } finally {
+      await session.endSession();
     }
   }
 
@@ -112,18 +113,19 @@ export class UsersService {
     return data;
   }
 
-  private assignRole(roleId: string, userId: string, session: any) {
-    this.assignRoleModel.deleteMany({ userId: userId }, { session });
-    new this.assignRoleModel({
+  private async assignRole(roleId: string, userId: string, session: any) {
+    await this.assignRoleModel.deleteMany({ userId: userId }, { session });
+    const assignRole = new this.assignRoleModel({
       userId: userId,
       roleId: roleId,
-    }).save({ session });
+    });
+    return await assignRole.save({ session });
   }
 
-  private sendWelcomeEmail(savedUser: User) {
+  private async sendWelcomeEmail(savedUser: User) {
     try {
       const userData = savedUser.toObject();
-      this.mailService.sendEmailUsingQueue(
+      await this.mailService.sendEmailUsingQueue(
         savedUser.email,
         userData,
         `Welcome to ${process.env.APP_NAME} - Account Created Successfully`,
@@ -142,51 +144,59 @@ export class UsersService {
   async create(createdUser: CreateUserDto, file: Express.Multer.File | null) {
     const session = await this.userModel.db.startSession();
     let savedUser;
-    await session.withTransaction(async () => {
-      // process user data
-      const data = await this.processUserData(createdUser, file, null, 'create');
-      const newUser = new this.userModel(data);
-      savedUser = await newUser.save({ session });
-      const roleId = data?.roleId ?? null;
-      // assign role to user
-      if (roleId) {
-        await this.assignRole(roleId, savedUser._id, session);
-      }
-    });
+    try {
+      await session.withTransaction(async () => {
+        // define role id  
+        const roleId = createdUser?.roleId ?? null;
+        // process user data
+        const data = this.processUserData(createdUser, file, null, 'create');
+        const newUser = new this.userModel(data);
+        savedUser = await newUser.save({ session });
+        // console.log("roleId", roleId);
+        // assign role to user
+        if (roleId) {
+          await this.assignRole(roleId, savedUser._id, session);
+        }
+      });
 
-    await session.endSession();
-    // send welcome email
-    await this.sendWelcomeEmail(savedUser);
+      // send welcome email
+      await this.sendWelcomeEmail(savedUser);
 
-    return this.userDetails(savedUser._id);
-
+      return this.userDetails(savedUser._id);
+    } catch (error) {
+      this.logger.error('Failed to create user:', error.message);
+      throw error;
+    } finally {
+      await session.endSession();
+    }
   }
 
-  update(id: string, updateUserDto: UpdateUserDto, file: Express.Multer.File = null) {
-    const session = this.userModel.db.startSession() as any;
-    const existingUser = this.userModel.findById(id).exec() as any;
+  async update(id: string, updateUserDto: UpdateUserDto, file: Express.Multer.File = null) {
+    const session = await this.userModel.db.startSession();
+    const existingUser = await this.userModel.findById(id).exec();
     if (!existingUser) {
       throw new Error('User not found');
     }
     let savedUser;
     try {
-      session.withTransaction(async () => {
+      await session.withTransaction(async () => {
         // process user data
         const data = this.processUserData(updateUserDto, file, existingUser.image, 'update');
-        savedUser = this.userModel.findByIdAndUpdate(id, data, { new: true, session }).exec();
-        const roleId = data?.roleId ?? null;
+        savedUser = await this.userModel.findByIdAndUpdate(id, data, { new: true, session }).exec();
+        const roleId = updateUserDto?.roleId ?? null;
         // assign role to user
         if (roleId) {
-          this.assignRole(roleId, id, session);
+          await this.assignRole(roleId, id, session);
         }
       });
       // send welcome email
-      this.sendWelcomeEmail(savedUser);
+      await this.sendWelcomeEmail(savedUser);
       return this.userDetails(id);
     } catch (error) {
-      session.endSession();
       this.logger.error('Failed to update user:', error.message);
       throw error;
+    } finally {
+      await session.endSession();
     }
   }
 

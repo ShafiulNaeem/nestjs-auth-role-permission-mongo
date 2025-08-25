@@ -21,9 +21,9 @@ export class FileService {
     // Use project root uploads directory instead of dist/utilis/file storage
     const projectRoot = path.resolve(__dirname, '..', '..', '..');
     const fullStoragePath = path.join(projectRoot, 'uploads', fileDir);
-    console.log('Full storage path:', fullStoragePath);
-    console.log('File dirname:', __dirname);
-    console.log('File buffer size:', file.buffer.length);
+    // console.log('Full storage path:', fullStoragePath);
+    // console.log('File dirname:', __dirname);
+    // console.log('File buffer size:', file.buffer.length);
 
     // Create directory if it doesn't exist
     if (!fs.existsSync(fullStoragePath)) {
@@ -33,7 +33,7 @@ export class FileService {
     // Save the file to the uploads directory in project root
     fs.writeFileSync(path.join(projectRoot, 'uploads', filePath), file.buffer);
 
-    console.log('File uploaded successfully:', filePath);
+    // console.log('File uploaded successfully:', filePath);
 
     return filePath;
   }
