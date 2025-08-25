@@ -180,10 +180,12 @@ export class UsersService {
     let savedUser;
     try {
       await session.withTransaction(async () => {
+        const roleId = updateUserDto?.roleId ?? null;
+
         // process user data
         const data = this.processUserData(updateUserDto, file, existingUser.image, 'update');
         savedUser = await this.userModel.findByIdAndUpdate(id, data, { new: true, session }).exec();
-        const roleId = updateUserDto?.roleId ?? null;
+
         // assign role to user
         if (roleId) {
           await this.assignRole(roleId, id, session);
@@ -200,17 +202,17 @@ export class UsersService {
     }
   }
 
-  private filter(params: any) {
+  private async filter(params: any) {
     const filter: FilterQuery<UserDocument> = {};
     // search by name, email
     if (params?.search) {
       const searchRegex = { $regex: String(params.search), $options: 'i' };
       // Get role IDs that have name matching the search
-      const matchedRoleIds = this.roleModel.distinct('_id', {
+      const matchedRoleIds = await this.roleModel.distinct('_id', {
         name: searchRegex,
       });
       // get user IDs that have matching roles
-      const matchedUserIds = this.assignRoleModel.distinct('userId', {
+      const matchedUserIds = await this.assignRoleModel.distinct('userId', {
         roleId: { $in: matchedRoleIds },
       });
       filter.$or = [
@@ -222,7 +224,7 @@ export class UsersService {
     // role ID
     if (params?.roleId) {
       // get user IDs that have matching roles
-      const userIds = this.assignRoleModel.distinct('userId', {
+      const userIds = await this.assignRoleModel.distinct('userId', {
         roleId: params.roleId,
       });
       filter._id = { $in: userIds };
@@ -230,9 +232,9 @@ export class UsersService {
     return filter;
   }
 
-  findAll(params: any = null) {
+  async findAll(params: any = null) {
     const collation = { locale: 'en', strength: 1 };
-    const filter = this.filter(params);
+    const filter = await this.filter(params);
     const sort = 'createdAt -1';
     const populate = {
       path: 'assignRole',
@@ -245,7 +247,7 @@ export class UsersService {
     // if params has not limit or limit < 1 -> no pagination
     const limit = Number(params?.limit ?? 0);
     if (!limit || limit < 1) {
-      return this.userModel
+      return await this.userModel
         .find(filter)
         // .collation(collation)
         .sort(sort)
@@ -261,22 +263,22 @@ export class UsersService {
       // collation: collation,
       populate: populate,
     };
-    return this.userModel.paginate(filter, options);
+    return await this.userModel.paginate(filter, options);
   }
 
   async findOne(id: string) {
-    return this.userModel.findById(id).exec();
+    return await this.userModel.findById(id).exec();
   }
 
   async findByEmail(email: string) {
-    return this.userModel.findOne({ email }).exec();
+    return await this.userModel.findOne({ email }).exec();
   }
 
   async findByProvider(
     provider: string,
     providerId: string,
   ): Promise<User | null> {
-    return this.userModel.findOne({ provider, providerId }).exec();
+    return await this.userModel.findOne({ provider, providerId }).exec();
   }
 
   async updatePassword(email: string, password: string) {
@@ -291,23 +293,24 @@ export class UsersService {
       .exec();
   }
 
-  remove(id: string) {
-    const session = this.userModel.db.startSession() as any;
-    const user = this.userModel.findById(id).exec();
+  async remove(id: string) {
+    const session = await this.userModel.db.startSession();
+    const user = await this.userModel.findById(id).exec();
     if (!user) {
       throw new Error('User not found');
     }
-
     try {
-      session.withTransaction(async () => {
+      await session.withTransaction(async () => {
         // delete assign role
-        this.assignRoleModel.deleteMany({ userId: id }, { session });
+        await this.assignRoleModel.deleteMany({ userId: id }, { session });
         // delete user
-        this.userModel.findByIdAndDelete(id, { session });
+        await this.userModel.findByIdAndDelete(id, { session });
       });
     } catch (error) {
       this.logger.error('Failed to delete user roles:', error.message);
       throw error;
+    } finally {
+      await session.endSession();
     }
   }
 
