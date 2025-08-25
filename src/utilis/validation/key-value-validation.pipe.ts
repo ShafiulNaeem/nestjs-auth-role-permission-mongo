@@ -1,4 +1,4 @@
-import { ValidationPipe, ValidationError, BadRequestException, UnprocessableEntityException} from '@nestjs/common';
+import { ValidationPipe, ValidationError, BadRequestException, UnprocessableEntityException } from '@nestjs/common';
 
 export class KeyValueValidationPipe extends ValidationPipe {
   protected flattenValidationErrors(validationErrors: ValidationError[]): any {

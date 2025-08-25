@@ -22,6 +22,7 @@ import { stat } from 'fs';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolePermission } from 'src/utilis/decorators/role-permission.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { KeyValueFileValidationPipe } from 'src/utilis/validation/file-key-value-validation.pipe';
 
 @Controller({ version: '1', path: 'users' })
 export class UsersController {
@@ -33,15 +34,13 @@ export class UsersController {
   @UseInterceptors(FileInterceptor('image'))
   create(
     @Body() createUserDto: CreateUserDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 2 * 1024 * 1024 }), // 2 MB
-          new FileTypeValidator({ fileType: /(jpg|jpeg|png)$/ }), // only jpg/png
-        ],
-        fileIsRequired: false, // optional file
-      }),
-    )
+    @UploadedFile(new KeyValueFileValidationPipe({
+      fieldName: 'image',
+      required: false,
+      maxSize: 2 * 1024 * 1024,
+      fileType: /(jpg|jpeg|png)$/,
+      //message: "Image must be a valid file type (jpg, jpeg, png) and not exceed 2MB",
+    }))
     file: Express.Multer.File
   ) {
     return {
@@ -58,15 +57,22 @@ export class UsersController {
   update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 2 * 1024 * 1024 }), // 2 MB
-          new FileTypeValidator({ fileType: /(jpg|jpeg|png)$/ }), // only jpg/png
-        ],
-        fileIsRequired: false, // optional file
-      }),
-    )
+    // @UploadedFile(
+    //   new ParseFilePipe({
+    //     validators: [
+    //       new MaxFileSizeValidator({ maxSize: 2 * 1024 * 1024 }), // 2 MB
+    //       new FileTypeValidator({ fileType: /(jpg|jpeg|png)$/ }), // only jpg/png
+    //     ],
+    //     fileIsRequired: false, // optional file
+    //   }),
+    // )
+    @UploadedFile(new KeyValueFileValidationPipe({
+      fieldName: 'image',
+      required: false,
+      maxSize: 2 * 1024 * 1024,
+      fileType: /(jpg|jpeg|png)$/,
+      message: "hi there",
+    }))
     file: Express.Multer.File
   ) {
     return {
