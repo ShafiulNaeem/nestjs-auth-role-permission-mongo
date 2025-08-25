@@ -1,14 +1,14 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Put, 
-  Param, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Put,
+  Param,
   Query,
-  Delete, 
+  Delete,
   UseGuards,
-  BadRequestException, 
+  BadRequestException,
   UseInterceptors,
   UploadedFile,
   ParseFilePipe,
@@ -23,13 +23,13 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolePermission } from 'src/utilis/decorators/role-permission.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-@Controller('users')
+@Controller({ version: '1', path: 'users' })
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  @RolePermission('User','create')
+  @RolePermission('User', 'create')
   @UseInterceptors(FileInterceptor('image'))
   create(
     @Body() createUserDto: CreateUserDto,
@@ -53,7 +53,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  @RolePermission('User','update')
+  @RolePermission('User', 'update')
   @UseInterceptors(FileInterceptor('image'))
   update(
     @Param('id') id: string,
@@ -78,7 +78,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  @RolePermission('User','list')
+  @RolePermission('User', 'list')
   findAll(@Query() query: any) {
     return {
       statusCode: 200,
@@ -89,7 +89,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  @RolePermission('User','show')
+  @RolePermission('User', 'show')
   findOne(@Param('id') id: string) {
     return {
       statusCode: 200,
@@ -100,7 +100,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  @RolePermission('User','delete')
+  @RolePermission('User', 'delete')
   remove(@Param('id') id: string) {
     this.usersService.remove(id);
     return {
