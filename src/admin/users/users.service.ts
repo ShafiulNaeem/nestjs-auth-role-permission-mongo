@@ -139,29 +139,27 @@ export class UsersService {
     }
   }
 
-  create(createdUser: CreateUserDto, file: Express.Multer.File | null) {
-    const session = this.userModel.db.startSession() as any;
+  async create(createdUser: CreateUserDto, file: Express.Multer.File | null) {
+    const session = await this.userModel.db.startSession();
     let savedUser;
-    try {
-      session.withTransaction(async () => {
-        // process user data
-        const data = this.processUserData(createdUser, file, null, 'create');
-        const newUser = new this.userModel(data);
-        savedUser = newUser.save({ session });
-        const roleId = data?.roleId ?? null;
-        // assign role to user
-        if (roleId) {
-          this.assignRole(roleId, savedUser._id, session);
-        }
-      });
-      // send welcome email
-      this.sendWelcomeEmail(savedUser);
-      return this.userDetails(savedUser._id);
-    } catch (error) {
-      session.endSession();
-      this.logger.error('Failed to create user:', error.message);
-      throw error;
-    }
+    await session.withTransaction(async () => {
+      // process user data
+      const data = await this.processUserData(createdUser, file, null, 'create');
+      const newUser = new this.userModel(data);
+      savedUser = await newUser.save({ session });
+      const roleId = data?.roleId ?? null;
+      // assign role to user
+      if (roleId) {
+        await this.assignRole(roleId, savedUser._id, session);
+      }
+    });
+
+    await session.endSession();
+    // send welcome email
+    await this.sendWelcomeEmail(savedUser);
+
+    return this.userDetails(savedUser._id);
+
   }
 
   update(id: string, updateUserDto: UpdateUserDto, file: Express.Multer.File = null) {

@@ -32,7 +32,7 @@ export class UsersController {
   @Post()
   @RolePermission('User', 'create')
   @UseInterceptors(FileInterceptor('image'))
-  create(
+  async create(
     @Body() createUserDto: CreateUserDto,
     @UploadedFile(new KeyValueFileValidationPipe({
       fieldName: 'image',
@@ -43,11 +43,21 @@ export class UsersController {
     }))
     file: Express.Multer.File
   ) {
-    return {
-      statusCode: 201,
-      message: 'User created successfully',
-      data: this.usersService.create(createUserDto, file),
-    };
+    try {
+      const userData = await this.usersService.create(createUserDto, file);
+      console.log("user:data", userData);
+      return {
+        statusCode: 201,
+        message: 'User created successfully',
+        data: userData
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: 'Failed to create user',
+        error: error.message
+      });
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -70,8 +80,7 @@ export class UsersController {
       fieldName: 'image',
       required: false,
       maxSize: 2 * 1024 * 1024,
-      fileType: /(jpg|jpeg|png)$/,
-      message: "hi there",
+      fileType: /(jpg|jpeg|png)$/
     }))
     file: Express.Multer.File
   ) {

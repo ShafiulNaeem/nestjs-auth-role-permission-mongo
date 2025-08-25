@@ -13,14 +13,27 @@ export class FileService {
 
     let fileName = null;
     if (!name) {
-        fileName = Date.now() + Math.floor(Math.random() * 1000) + '.' + file.originalname.split('.').pop();
-    }else{
-        fileName = name + '_' + Date.now() + Math.floor(Math.random() * 1000) + '.' + file.originalname.split('.').pop();
+      fileName = Date.now() + Math.floor(Math.random() * 1000) + '.' + file.originalname.split('.').pop();
+    } else {
+      fileName = name + '_' + Date.now() + Math.floor(Math.random() * 1000) + '.' + file.originalname.split('.').pop();
     }
     const filePath = fileDir + '/' + fileName;
+    // Use project root uploads directory instead of dist/utilis/file storage
+    const projectRoot = path.resolve(__dirname, '..', '..', '..');
+    const fullStoragePath = path.join(projectRoot, 'uploads', fileDir);
+    console.log('Full storage path:', fullStoragePath);
+    console.log('File dirname:', __dirname);
+    console.log('File buffer size:', file.buffer.length);
 
-    // Save the file to the storage (public or wherever you prefer)
-    fs.writeFileSync(path.join(__dirname, '..', 'storage', filePath), file.buffer);
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(fullStoragePath)) {
+      fs.mkdirSync(fullStoragePath, { recursive: true });
+    }
+
+    // Save the file to the uploads directory in project root
+    fs.writeFileSync(path.join(projectRoot, 'uploads', filePath), file.buffer);
+
+    console.log('File uploaded successfully:', filePath);
 
     return filePath;
   }
@@ -40,7 +53,8 @@ export class FileService {
   }
 
   public static deleteFile(filePath: string): void {
-    const fileLocation = path.join(__dirname, '..', 'storage', filePath);
+    const projectRoot = path.resolve(__dirname, '..', '..', '..');
+    const fileLocation = path.join(projectRoot, 'uploads', filePath);
     if (fs.existsSync(fileLocation)) {
       fs.unlinkSync(fileLocation); // Delete the file
     }

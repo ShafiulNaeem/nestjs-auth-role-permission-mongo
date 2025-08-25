@@ -17,11 +17,6 @@ async function bootstrap() {
   // Configure class-validator to use NestJS's dependency injection container
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
-  // file dir prefix
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/uploads/',
-  });
-
   // Set global prefix for API routes
   app.setGlobalPrefix('api');
   // Enable versioning for the API
@@ -34,7 +29,7 @@ async function bootstrap() {
 
   // validation pipe
   // app.useGlobalPipes(new ValidationPipe());
-    // validation pipe (key-value error format)
+  // validation pipe (key-value error format)
   app.useGlobalPipes(new KeyValueValidationPipe());
   // app.useGlobalPipes(
   //   new ValidationPipe({
@@ -42,7 +37,12 @@ async function bootstrap() {
   //     transform: true,
   //   }),
   // );
-  
+
+  // file dir prefix - serve static files from uploads directory
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads/',
+  });
+
   //Apply global interceptors
   app.useGlobalInterceptors({
     intercept(context, next) {
