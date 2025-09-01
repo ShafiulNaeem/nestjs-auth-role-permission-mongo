@@ -99,8 +99,8 @@ export class RoleService {
     }
   }
 
-  // Get all roles with their permissions populated
   async findAll(params: any) {
+    console.log("params", params);
     const collation = { locale: 'en', strength: 1 };
     const { filter } = await this.buildRoleFilters(params);
     const sort = 'name';

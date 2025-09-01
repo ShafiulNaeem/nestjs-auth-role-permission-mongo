@@ -103,30 +103,30 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @Get()
   @RolePermission('User', 'list')
-  findAll(@Query() query: any) {
+  async findAll(@Query() query: any) {
     return {
       statusCode: 200,
       message: 'Users retrieved successfully',
-      data: this.usersService.findAll(query),
+      data: await this.usersService.findAll(query),
     };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
   @RolePermission('User', 'show')
-  findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string) {
     return {
       statusCode: 200,
       message: 'User retrieved successfully',
-      data: this.usersService.userDetails(id),
+      data: await this.usersService.userDetails(id),
     };
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   @RolePermission('User', 'delete')
-  remove(@Param('id') id: string) {
-    this.usersService.remove(id);
+  async remove(@Param('id') id: string) {
+     await this.usersService.remove(id);
     return {
       statusCode: 200,
       message: 'User deleted successfully',

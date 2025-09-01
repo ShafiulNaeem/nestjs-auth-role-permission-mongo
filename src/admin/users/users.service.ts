@@ -10,6 +10,7 @@ import { AssignRole, AssignRoleModel, AssignRoleDocument } from '../role/schemas
 import { FileService } from 'src/utilis/file/file.service';
 import { Auth } from 'src/utilis/auth-facade/auth';
 import { Role, RoleDocument } from '../role/schemas/role.schema';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class UsersService {
@@ -116,8 +117,8 @@ export class UsersService {
   private async assignRole(roleId: string, userId: string, session: any) {
     await this.assignRoleModel.deleteMany({ userId: userId }, { session });
     const assignRole = new this.assignRoleModel({
-      userId: userId,
-      roleId: roleId,
+      userId: new Types.ObjectId(userId),
+      roleId: new Types.ObjectId(roleId),
     });
     return await assignRole.save({ session });
   }
@@ -210,10 +211,12 @@ export class UsersService {
       const matchedRoleIds = await this.roleModel.distinct('_id', {
         name: searchRegex,
       });
+      // console.log('matchedRoleIds',matchedRoleIds);
       // get user IDs that have matching roles
       const matchedUserIds = await this.assignRoleModel.distinct('userId', {
         roleId: { $in: matchedRoleIds },
       });
+      // console.log('matchedUserIds', matchedUserIds);
       filter.$or = [
         { name: searchRegex },
         { email: searchRegex },
@@ -221,11 +224,13 @@ export class UsersService {
       ];
     }
     // role ID
+    // console.log("params", params);
     if (params?.roleId) {
       // get user IDs that have matching roles
       const userIds = await this.assignRoleModel.distinct('userId', {
-        roleId: params.roleId,
+        roleId: new Types.ObjectId(params.roleId),
       });
+      // console.log("userId",userIds);
       filter._id = { $in: userIds };
     }
     return filter;
@@ -243,6 +248,7 @@ export class UsersService {
         select: 'name is_manage_all'
       }
     };
+    // console.log("populate", populate);
     // if params has not limit or limit < 1 -> no pagination
     const limit = Number(params?.limit ?? 0);
     if (!limit || limit < 1) {
@@ -262,6 +268,10 @@ export class UsersService {
       // collation: collation,
       populate: populate,
     };
+    // console.log("options", options);
+    const result = await this.userModel.paginate(filter, options);
+    // console.log("result", result);
+
     return await this.userModel.paginate(filter, options);
   }
 
