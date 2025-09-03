@@ -5,17 +5,30 @@ import * as path from 'path';
 
 @Injectable()
 export class FileService {
-
-  public static uploadFile(file: Express.Multer.File, fileDir: string = 'files', name: string = ''): null | string {
+  public static uploadFile(
+    file: Express.Multer.File,
+    fileDir: string = 'files',
+    name: string = '',
+  ): null | string {
     if (!file) {
       return null;
     }
 
     let fileName = null;
     if (!name) {
-      fileName = Date.now() + Math.floor(Math.random() * 1000) + '.' + file.originalname.split('.').pop();
+      fileName =
+        Date.now() +
+        Math.floor(Math.random() * 1000) +
+        '.' +
+        file.originalname.split('.').pop();
     } else {
-      fileName = name + '_' + Date.now() + Math.floor(Math.random() * 1000) + '.' + file.originalname.split('.').pop();
+      fileName =
+        name +
+        '_' +
+        Date.now() +
+        Math.floor(Math.random() * 1000) +
+        '.' +
+        file.originalname.split('.').pop();
     }
     const filePath = fileDir + '/' + fileName;
     // Use project root uploads directory instead of dist/utilis/file storage
@@ -38,7 +51,12 @@ export class FileService {
     return filePath;
   }
 
-  public static updateFile(newFile: Express.Multer.File, oldFile: string = null, fileDir: string = 'files', name: string = ''): string {
+  public static updateFile(
+    newFile: Express.Multer.File,
+    oldFile: string = null,
+    fileDir: string = 'files',
+    name: string = '',
+  ): string {
     if (!newFile) {
       return oldFile;
     }
@@ -58,5 +76,24 @@ export class FileService {
     if (fs.existsSync(fileLocation)) {
       fs.unlinkSync(fileLocation); // Delete the file
     }
+  }
+
+  public static saveBufferFile(
+    buffer: Buffer,
+    fileName: string,
+    ext: string = 'xlsx',
+    fileDir: string = 'files'
+  ): string {
+    const filePath = fileDir + '/' + fileName + '.' + ext;
+    const projectRoot = path.resolve(__dirname, '..', '..', '..');
+    const fullStoragePath = path.join(projectRoot, 'uploads', fileDir);
+
+    if (!fs.existsSync(fullStoragePath)) {
+      fs.mkdirSync(fullStoragePath, { recursive: true });
+    }
+
+    fs.writeFileSync(path.join(projectRoot, 'uploads', filePath), buffer);
+
+    return filePath; // relative path (e.g. files/users_export_123.xlsx)
   }
 }

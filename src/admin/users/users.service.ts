@@ -432,4 +432,35 @@ export class UsersService {
     const isValid = await bcrypt.compare(refreshToken, user.refreshTokenHash);
     return isValid;
   }
+
+  // async exportUserData(userId: string): Promise<any> {
+  //   const user = await this.userDetails(userId);
+  //   if (!user) {
+  //     throw new Error('User not found');
+  //   }
+
+  //   // Generate Excel file
+  //   const columns = [
+  //     { header: 'ID', key: 'id', width: 30 },
+  //     { header: 'Email', key: 'email', width: 30 },
+  //     { header: 'Name', key: 'name', width: 30 },
+  //     { header: 'Role', key: 'role', width: 30 },
+  //     { header: 'Permissions', key: 'permissions', width: 30 },
+  //   ];
+
+  //   const data = [
+  //     {
+  //       id: user.id,
+  //       email: user.email,
+  //       name: user.name,
+  //       role: user.role.name,
+  //       permissions: user.permissions.map((p) => p.subject + ':' + p.action).join(', '),
+  //     },
+  //   ];
+
+  //   const fileName = `user_${user.id}_data.xlsx`;
+  //   const { filePath, downloadUrl } = await ExcelService.export(data, columns, 'User Data', fileName);
+
+  //   return { filePath, downloadUrl };
+  // }
 }

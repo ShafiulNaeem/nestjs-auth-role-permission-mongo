@@ -17,6 +17,7 @@ import { Queue } from 'bullmq';
 import { MulterModule } from '@nestjs/platform-express';
 import { FileService } from './utilis/file/file.service';
 import { AuthFacadeMiddleware } from './utilis/middleware/auth-facade.middleware';
+import { ExcelService } from './utilis/excel/excel.service';
 
 @Module({
   imports: [
@@ -96,6 +97,7 @@ import { AuthFacadeMiddleware } from './utilis/middleware/auth-facade.middleware
       useClass: RolePermissionGuard,
     },
     FileService,
+    ExcelService,
   ],
 })
 
